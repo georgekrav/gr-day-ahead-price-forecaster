@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gr-epf"
+version = "0.1.0"
+description = "Day-ahead electricity price forecasting for the Greek bidding zone (ENTSO-E data)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "entsoe-py>=0.6.8",
+    "pandas>=2.0",
+    "pyarrow>=14",
+    "lightgbm>=4.0",
+    "scikit-learn>=1.4",
+    "matplotlib>=3.8",
+    "plotly>=5.18",
+    "streamlit>=1.30",
+    "holidays>=0.40",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.4",
+    "jupyterlab>=4",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

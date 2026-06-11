@@ -1,0 +1,21 @@
+# Secrets
+.env
+
+# Data (cached pulls, large files)
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
