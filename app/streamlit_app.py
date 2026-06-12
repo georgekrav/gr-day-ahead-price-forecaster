@@ -62,6 +62,92 @@ STRINGS = {
         " {c95:.1%} (στόχος 95%) στο backtest.",
     },
     "how_title": {"en": "How it works", "el": "Πώς λειτουργεί"},
+    "help_title": {
+        "en": "Every morning, before the day-ahead auction closes (12:00 CET),"
+        " this app forecasts all 24 hourly wholesale electricity prices for"
+        " tomorrow in the Greek bidding zone.",
+        "el": "Κάθε πρωί, πριν κλείσει η δημοπρασία επόμενης ημέρας (12:00 CET),"
+        " η εφαρμογή προβλέπει και τις 24 ωριαίες χονδρεμπορικές τιμές ρεύματος"
+        " της αυριανής μέρας για την ελληνική ζώνη.",
+    },
+    "help_forecast_for": {
+        "en": "The blue line is the model's forecast for each hour of the target"
+        " day. The shaded bands are conformal uncertainty intervals: the true"
+        " price should fall inside the dark band 80% of the time and inside the"
+        " light band 95% of the time.",
+        "el": "Η μπλε γραμμή είναι η πρόβλεψη του μοντέλου για κάθε ώρα της"
+        " ημέρας-στόχου. Οι σκιασμένες ζώνες είναι διαστήματα αβεβαιότητας"
+        " (conformal): η πραγματική τιμή αναμένεται μέσα στη σκούρα ζώνη το 80%"
+        " των ωρών και μέσα στην ανοιχτόχρωμη το 95%.",
+    },
+    "help_daily_mean": {
+        "en": "Average of the 24 hourly forecasts — a quick sense of how cheap"
+        " or expensive tomorrow is overall.",
+        "el": "Ο μέσος όρος των 24 ωριαίων προβλέψεων — γρήγορη αίσθηση του"
+        " πόσο φτηνή ή ακριβή είναι συνολικά η αυριανή μέρα.",
+    },
+    "help_peak": {
+        "en": "The most expensive forecast hour — typically the evening ramp,"
+        " when solar fades while demand peaks and gas plants set the price.",
+        "el": "Η ακριβότερη προβλεπόμενη ώρα — συνήθως το βράδυ, όταν ο ήλιος"
+        " χάνεται ενώ η ζήτηση κορυφώνεται και την τιμή ορίζουν οι μονάδες"
+        " φυσικού αερίου.",
+    },
+    "help_trough": {
+        "en": "The cheapest forecast hour — typically midday, when solar floods"
+        " the market; on sunny low-demand days it can go negative.",
+        "el": "Η φθηνότερη προβλεπόμενη ώρα — συνήθως το μεσημέρι, όταν τα"
+        " ηλιακά πλημμυρίζουν την αγορά· σε ηλιόλουστες μέρες χαμηλής ζήτησης"
+        " μπορεί να βγει και αρνητική.",
+    },
+    "help_generated": {
+        "en": "When the daily job produced this forecast. It runs on GitHub's"
+        " servers every morning before the market gate closure.",
+        "el": "Πότε παρήχθη αυτή η πρόβλεψη από το καθημερινό αυτόματο τρέξιμο."
+        " Εκτελείται σε servers του GitHub κάθε πρωί, πριν από το κλείσιμο της"
+        " αγοράς.",
+    },
+    "help_track_record": {
+        "en": "Past forecasts frozen at issue time, compared against the actual"
+        " auction prices once published. Forecasts are never rewritten after"
+        " the fact.",
+        "el": "Παλιές προβλέψεις «παγωμένες» όπως εκδόθηκαν, σε σύγκριση με τις"
+        " πραγματικές τιμές της δημοπρασίας μόλις δημοσιευτούν. Καμία πρόβλεψη"
+        " δεν ξαναγράφεται εκ των υστέρων.",
+    },
+    "help_live_mae": {
+        "en": "Mean Absolute Error over the scored hours of the last 14 days:"
+        " by how many EUR/MWh the forecast missed on average. The 12-month"
+        " backtest average is 19.27.",
+        "el": "Μέσο απόλυτο σφάλμα στις βαθμολογημένες ώρες των τελευταίων 14"
+        " ημερών: πόσα EUR/MWh έπεσε έξω η πρόβλεψη κατά μέσο όρο. Ο μέσος όρος"
+        " του 12μηνου backtest είναι 19,27.",
+    },
+    "help_hours_scored": {
+        "en": "How many forecast hours have a published actual price to compare"
+        " against so far.",
+        "el": "Πόσες προβλεπόμενες ώρες έχουν ήδη δημοσιευμένη πραγματική τιμή"
+        " για σύγκριση.",
+    },
+    "help_inside_80": {
+        "en": "Share of actual prices that landed inside the 80% band. If the"
+        " intervals are honest, this should hover around 80% as data"
+        " accumulates.",
+        "el": "Ποσοστό των πραγματικών τιμών που έπεσαν μέσα στη ζώνη 80%. Αν"
+        " οι ζώνες είναι σωστά βαθμονομημένες, με τον καιρό θα κινείται γύρω"
+        " στο 80%.",
+    },
+    "help_backtest": {
+        "en": "Walk-forward evaluation over the final 12 months: each month was"
+        " predicted by a model trained only on data before it, retrained"
+        " monthly — exactly how the system runs live. Lower is better; the"
+        " naive rows are the bar the model must beat.",
+        "el": "Αξιολόγηση walk-forward στους τελευταίους 12 μήνες: κάθε μήνας"
+        " προβλέφθηκε από μοντέλο εκπαιδευμένο μόνο σε δεδομένα πριν από αυτόν,"
+        " με μηνιαία επανεκπαίδευση — ακριβώς όπως λειτουργεί ζωντανά. Όσο"
+        " χαμηλότερα τόσο καλύτερα· οι «naive» γραμμές είναι ο πήχης που πρέπει"
+        " να ξεπερνά το μοντέλο.",
+    },
 }
 
 HOW_EN = """
@@ -190,7 +276,7 @@ def t(key: str) -> str:
 
 
 with head_left:
-    st.title(t("title"))
+    st.title(t("title"), help=t("help_title"))
     st.caption(t("caption"))
 
 latest = load_json("latest.json")
@@ -203,37 +289,49 @@ rows["time_local"] = pd.to_datetime(rows["time_local"], utc=True).dt.tz_convert(
     "Europe/Athens"
 )
 
-st.subheader(f"{t('forecast_for')} {latest['target_day']}")
+st.subheader(
+    f"{t('forecast_for')} {latest['target_day']}", help=t("help_forecast_for")
+)
 peak = rows.loc[rows["forecast"].idxmax()]
 trough = rows.loc[rows["forecast"].idxmin()]
 c1, c2, c3, c4 = st.columns(4)
-c1.metric(t("daily_mean"), f"{rows['forecast'].mean():.1f} €/MWh")
-c2.metric(t("peak"), f"{peak['forecast']:.1f} €/MWh", f"{t('at')} {peak['time_local']:%H:%M}")
-c3.metric(
-    t("trough"), f"{trough['forecast']:.1f} €/MWh", f"{t('at')} {trough['time_local']:%H:%M}"
+c1.metric(
+    t("daily_mean"), f"{rows['forecast'].mean():.1f} €/MWh", help=t("help_daily_mean")
 )
-c4.metric(t("generated"), f"{pd.Timestamp(latest['generated_at_utc']):%d %b %H:%M} UTC")
+c2.metric(
+    t("peak"), f"{peak['forecast']:.1f} €/MWh",
+    f"{t('at')} {peak['time_local']:%H:%M}", help=t("help_peak"),
+)
+c3.metric(
+    t("trough"), f"{trough['forecast']:.1f} €/MWh",
+    f"{t('at')} {trough['time_local']:%H:%M}", help=t("help_trough"),
+)
+c4.metric(
+    t("generated"),
+    f"{pd.Timestamp(latest['generated_at_utc']):%d %b %H:%M} UTC",
+    help=t("help_generated"),
+)
 st.plotly_chart(band_figure(rows, t), use_container_width=True)
 
 history = load_history()
 if history is not None:
     scored = history.dropna(subset=["actual", "forecast"])
     if not scored.empty:
-        st.subheader(t("track_record"))
+        st.subheader(t("track_record"), help=t("help_track_record"))
         recent = scored.tail(14 * 24)
         live_mae = (recent["actual"] - recent["forecast"]).abs().mean()
         inside_80 = (
             (recent["actual"] >= recent["lo_80"]) & (recent["actual"] <= recent["hi_80"])
         ).mean()
         c1, c2, c3 = st.columns(3)
-        c1.metric(t("live_mae"), f"{live_mae:.1f} €/MWh")
-        c2.metric(t("hours_scored"), f"{len(recent)}")
-        c3.metric(t("inside_80"), f"{inside_80:.0%}")
+        c1.metric(t("live_mae"), f"{live_mae:.1f} €/MWh", help=t("help_live_mae"))
+        c2.metric(t("hours_scored"), f"{len(recent)}", help=t("help_hours_scored"))
+        c3.metric(t("inside_80"), f"{inside_80:.0%}", help=t("help_inside_80"))
         st.plotly_chart(track_record_figure(recent, t), use_container_width=True)
 
 summary = load_json("backtest_summary.json")
 if summary and "metrics" in summary:
-    st.subheader(t("backtest_title"))
+    st.subheader(t("backtest_title"), help=t("help_backtest"))
     table = pd.DataFrame(summary["metrics"]["table"]).T
     st.dataframe(table, use_container_width=True)
     if "conformal" in summary:
