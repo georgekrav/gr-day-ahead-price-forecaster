@@ -1,13 +1,11 @@
-"""Forecast evaluation: MAE, RMSE, sMAPE, comparison tables, per-hour errors.
-
-The walk-forward backtest itself arrives in Phase 5; these metrics are the
-shared vocabulary for it and for the baseline bar.
-"""
+"""Forecast evaluation: metrics, comparison tables, walk-forward backtest."""
 
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+from gr_epf import models
 
 
 def _aligned(y_true: pd.Series, y_pred: pd.Series) -> pd.DataFrame:
@@ -50,6 +48,34 @@ def metrics_table(y_true: pd.Series, forecasts: dict[str, pd.Series]) -> pd.Data
         for name, f in forecasts.items()
     }
     return pd.DataFrame(rows).T
+
+
+def walk_forward_predictions(
+    features_df: pd.DataFrame,
+    test_start: pd.Timestamp,
+    train_window: pd.Timedelta | None = None,
+    params: dict | None = None,
+) -> pd.Series:
+    """Out-of-sample predictions for [test_start, end], retraining monthly.
+
+    Each fold is predicted by a model trained only on rows strictly before
+    the fold start — expanding window by default, or the last train_window
+    of data when given. This mimics live operation: the model that prices
+    a given day has never seen that day or anything after it.
+    """
+    folds = []
+    cur = test_start
+    end = features_df.index.max()
+    while cur <= end:
+        nxt = cur + pd.DateOffset(months=1)
+        train_mask = features_df.index < cur
+        if train_window is not None:
+            train_mask &= features_df.index >= cur - train_window
+        model = models.train_lightgbm(features_df[train_mask], params)
+        fold = features_df[(features_df.index >= cur) & (features_df.index < nxt)]
+        folds.append(models.predict_lightgbm(model, fold))
+        cur = nxt
+    return pd.concat(folds)
 
 
 def metrics_by_hour(y_true: pd.Series, y_pred: pd.Series) -> pd.DataFrame:
