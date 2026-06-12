@@ -20,7 +20,7 @@ from gr_epf import data
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--start", default="2023-06-01")
+    parser.add_argument("--start", default=data.DATASET_START)
     parser.add_argument("--end", default=None)
     parser.add_argument(
         "--series", nargs="+", default=list(data.SERIES), choices=data.SERIES

@@ -31,6 +31,7 @@ log = logging.getLogger(__name__)
 
 ZONE = "GR"  # bidding zone EIC 10YGR-HTSO-----Y
 LOCAL_TZ = "Europe/Athens"
+DATASET_START = "2023-06-01"  # user decision 2026-06-12: rolling 3-year history
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = REPO_ROOT / "data" / "raw"
 PROCESSED_PATH = REPO_ROOT / "data" / "processed" / "hourly.parquet"

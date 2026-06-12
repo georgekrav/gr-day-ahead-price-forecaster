@@ -24,7 +24,10 @@ def main() -> None:
     now = pd.Timestamp.now(tz=data.LOCAL_TZ)
     target_start = now.normalize() + pd.DateOffset(days=1)
     target_end = target_start + pd.DateOffset(days=1)
-    fetch_start = (now.normalize() - pd.DateOffset(months=1)).replace(day=1)
+    # full-history start: cached complete months are skipped, so a warm
+    # cache refetches only the current month while a cold CI runner
+    # rebuilds the whole dataset and trains on identical data
+    fetch_start = pd.Timestamp(data.DATASET_START, tz=data.LOCAL_TZ)
 
     client = data.get_client()
     failures = []

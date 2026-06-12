@@ -1,0 +1,59 @@
+# Daily forecast for day D+1, issued before the SDAC gate closure
+# (12:00 CET/CEST). Two triggers cover DST: 08:30 UTC is 10:30 CEST in
+# summer; 09:30 UTC is 10:30 CET in winter. Runs are idempotent — the
+# newest forecast for a day wins — so the duplicate run is harmless.
+name: Daily forecast
+
+on:
+  schedule:
+    - cron: "30 8 * * *"
+    - cron: "30 9 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-forecast
+  cancel-in-progress: false
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -e .
+
+      # ENTSO-E raw chunks: a warm cache means only the current month is
+      # refetched; a cold cache rebuilds the full 3-year history (~5 min)
+      - uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: entsoe-raw-${{ github.run_id }}
+          restore-keys: |
+            entsoe-raw-
+
+      - name: Generate forecast
+        env:
+          ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
+        run: python scripts/make_forecast.py
+
+      - name: Commit artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add forecasts/
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+            exit 0
+          fi
+          git commit -m "Daily forecast $(date -u +%F)"
+          git pull --rebase origin main
+          git push
