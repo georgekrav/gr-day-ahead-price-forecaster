@@ -1,0 +1,46 @@
+# Mirrors the app + latest forecasts to the Hugging Face Space as a single
+# orphan commit (force push), so the Space history stays tiny. The Space
+# needs only the viewer files: app/, forecasts/, README, requirements.
+#
+# Requires (repo settings):
+#   - variable HF_SPACE  e.g. "username/gr-day-ahead-price-forecast"
+#   - secret   HF_TOKEN  (Hugging Face write token)
+# Skips quietly when HF_SPACE is not configured.
+name: Sync to Hugging Face Space
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  sync:
+    if: vars.HF_SPACE != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push viewer files to the Space
+        env:
+          HF_SPACE: ${{ vars.HF_SPACE }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN secret not set; skipping sync" && exit 0
+          fi
+          stage=$(mktemp -d)
+          cp -r app forecasts "$stage/"
+          cp .hf/README.md "$stage/README.md"
+          cp .hf/requirements.txt "$stage/requirements.txt"
+          cd "$stage"
+          git init -b main -q
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              add -A
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -qm "Deploy $(date -u '+%Y-%m-%d %H:%M') UTC"
+          hf_user="${HF_SPACE%%/*}"
+          git push --force "https://${hf_user}:${HF_TOKEN}@huggingface.co/spaces/${HF_SPACE}" main
+          echo "synced to https://huggingface.co/spaces/${HF_SPACE}"
