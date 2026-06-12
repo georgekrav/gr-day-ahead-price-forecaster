@@ -1,0 +1,35 @@
+{
+  "metrics": {
+    "window_start": "2025-06-11 21:00:00+00:00",
+    "window_end": "2026-06-11 20:00:00+00:00",
+    "training": "expanding, monthly retrain",
+    "table": {
+      "lightgbm": {
+        "MAE": 19.27,
+        "RMSE": 28.3,
+        "sMAPE": 40.57
+      },
+      "naive_24h": {
+        "MAE": 22.53,
+        "RMSE": 34.31,
+        "sMAPE": 46.04
+      },
+      "seasonal_naive_168h": {
+        "MAE": 27.7,
+        "RMSE": 41.33,
+        "sMAPE": 52.14
+      }
+    }
+  },
+  "conformal": {
+    "80": {
+      "coverage": 0.78,
+      "mean_width": 63.8
+    },
+    "95": {
+      "coverage": 0.944,
+      "mean_width": 124.8
+    },
+    "calibration_window_days": 90
+  }
+}

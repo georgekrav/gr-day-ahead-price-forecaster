@@ -1,0 +1,83 @@
+"""Daily forecast job: refresh data, retrain, write forecasts/ artifacts.
+
+Usage:
+    python scripts/make_forecast.py
+
+Designed to run on day D in the morning, after the day-ahead load forecast
+for D+1 is published (~10:00 CET) and before the SDAC gate closure
+(12:00 CET), forecasting the 24 hours of day D+1. Steps: refetch the
+current and previous month for every series, rebuild the hourly dataset,
+retrain LightGBM on all available history, predict D+1, apply conformal
+widths from forecasts/calibration.parquet, update forecasts/history.parquet
+and forecasts/latest.json.
+"""
+
+import json
+import sys
+
+import pandas as pd
+
+from gr_epf import conformal, data, features, forecast, models
+
+
+def main() -> None:
+    now = pd.Timestamp.now(tz=data.LOCAL_TZ)
+    target_start = now.normalize() + pd.DateOffset(days=1)
+    target_end = target_start + pd.DateOffset(days=1)
+    fetch_start = (now.normalize() - pd.DateOffset(months=1)).replace(day=1)
+
+    client = data.get_client()
+    failures = []
+    for series in data.SERIES:
+        failures += data.download_series(client, series, fetch_start, target_end)
+    if failures:
+        for chunk_start, err in failures:
+            print(f"FAILED {chunk_start:%Y-%m}: {err}", file=sys.stderr)
+        sys.exit(1)
+
+    df = data.build_hourly_dataset()
+    target_index = pd.date_range(
+        target_start.tz_convert("UTC"),
+        target_end.tz_convert("UTC"),
+        freq="h",
+        inclusive="left",
+    )
+    df = df.reindex(df.index.union(target_index))
+    feats = features.build_features(df)
+    fold = feats.loc[target_index]
+    if fold["price_lag_24h"].isna().all():
+        print("aborting: today's prices missing from cache", file=sys.stderr)
+        sys.exit(1)
+    if fold["load_forecast_mw"].isna().all():
+        print(
+            "warning: load forecast for the target day not yet published;"
+            " predicting through LightGBM NaN routing",
+            file=sys.stderr,
+        )
+
+    model = models.train_lightgbm(feats)
+    prediction = models.predict_lightgbm(model, fold)
+    quantiles = pd.read_parquet(data.REPO_ROOT / "forecasts" / "calibration.parquet")
+    intervals = conformal.apply_intervals(prediction, quantiles)
+
+    history_path = data.REPO_ROOT / "forecasts" / "history.parquet"
+    history = pd.read_parquet(history_path) if history_path.exists() else None
+    updated = forecast.update_history(history, intervals, df["price_eur_mwh"])
+    updated.to_parquet(history_path)
+
+    payload = forecast.latest_payload(
+        intervals,
+        generated_at=pd.Timestamp.now(tz="UTC"),
+        target_day=str(target_start.date()),
+    )
+    latest_path = data.REPO_ROOT / "forecasts" / "latest.json"
+    latest_path.write_text(json.dumps(payload, indent=2) + "\n")
+    print(
+        f"forecast for {target_start.date()}: mean {prediction.mean():.1f},"
+        f" min {prediction.min():.1f}, max {prediction.max():.1f} EUR/MWh"
+    )
+    print(f"history: {len(updated)} rows, latest written to {latest_path}")
+
+
+if __name__ == "__main__":
+    main()

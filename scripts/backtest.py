@@ -9,6 +9,7 @@ conformal calibration) and the error-by-hour figure under data/reports/.
 """
 
 import argparse
+import json
 
 import matplotlib
 
@@ -16,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from gr_epf import data, evaluate, features, models
+from gr_epf import data, evaluate, features, forecast, models
 
 
 def main() -> None:
@@ -70,6 +71,17 @@ def main() -> None:
 
     out = pd.DataFrame({"forecast": prediction, "actual": y})
     out.to_parquet(reports / "backtest_predictions.parquet")
+
+    forecast.update_json_section(
+        data.REPO_ROOT / "forecasts" / "backtest_summary.json",
+        "metrics",
+        {
+            "window_start": str(prediction.index.min()),
+            "window_end": str(prediction.index.max()),
+            "training": f"{label}, monthly retrain",
+            "table": json.loads(table.round(2).to_json(orient="index")),
+        },
+    )
     print(f"\npredictions and figure saved under {reports}")
 
 
