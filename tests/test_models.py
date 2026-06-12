@@ -41,3 +41,45 @@ class TestNaiveForecast:
         fc_a = models.naive_24h(prices)
         fc_b = models.naive_24h(perturbed)
         pd.testing.assert_series_equal(fc_a.iloc[:-10], fc_b.iloc[:-10])
+
+
+class TestLightGBM:
+    def make_features(self, rows: int = 400) -> pd.DataFrame:
+        idx = pd.date_range("2025-01-01", periods=rows, freq="h", tz="UTC")
+        rng = np.random.default_rng(1)
+        a = rng.normal(0, 1, rows)
+        b = rng.normal(0, 1, rows)
+        return pd.DataFrame(
+            {"a": a, "b": b, "target": 3 * a - 2 * b + rng.normal(0, 0.01, rows)},
+            index=idx,
+        )
+
+    def test_learns_simple_relation(self):
+        feats = self.make_features()
+        model = models.train_lightgbm(feats, params={"n_estimators": 200})
+        pred = models.predict_lightgbm(model, feats)
+        assert (feats["target"] - pred).abs().mean() < 0.5
+        assert (pred.index == feats.index).all()
+
+    def test_nan_target_rows_excluded_from_fit(self):
+        feats = self.make_features()
+        feats.loc[feats.index[:50], "target"] = np.nan
+        model = models.train_lightgbm(feats, params={"n_estimators": 50})
+        assert model.feature_columns == ["a", "b"]
+
+    def test_save_load_round_trip(self, tmp_path):
+        feats = self.make_features()
+        model = models.train_lightgbm(feats, params={"n_estimators": 50})
+        path = models.save_model(model, tmp_path / "m.txt")
+        restored = models.load_model(path)
+        pd.testing.assert_series_equal(
+            models.predict_lightgbm(model, feats),
+            models.predict_lightgbm(restored, feats),
+        )
+
+    def test_importances_named_and_sorted(self):
+        feats = self.make_features()
+        model = models.train_lightgbm(feats, params={"n_estimators": 50})
+        imp = models.feature_importances(model)
+        assert set(imp.index) == {"a", "b"}
+        assert imp.iloc[0] >= imp.iloc[1]
