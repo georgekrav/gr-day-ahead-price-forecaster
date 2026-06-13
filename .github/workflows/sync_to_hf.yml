@@ -19,7 +19,11 @@ jobs:
     if: vars.HF_SPACE != ''
     runs-on: ubuntu-latest
     steps:
+      # ref: main, not the triggering SHA — when called from daily_forecast
+      # the forecast job has already pushed a newer commit we must pick up
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Push viewer files to the Space
         env:
