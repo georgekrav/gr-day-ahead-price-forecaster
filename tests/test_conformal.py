@@ -49,6 +49,30 @@ class TestHourlyQuantiles:
         assert (elsewhere["hi_95"] - elsewhere["lo_95"]).iloc[0] == 20.0
 
 
+class TestAdaptiveConformal:
+    def test_coverage_near_target_under_drift(self):
+        # residual scale doubles partway through — static calibration would
+        # under-cover; ACI should track close to nominal
+        idx = hourly_index(24 * 200)
+        rng = np.random.default_rng(8)
+        forecast = pd.Series(100.0, index=idx)
+        scale = np.where(np.arange(len(idx)) < len(idx) // 2, 5.0, 15.0)
+        actual = forecast + rng.normal(0, 1, len(idx)) * scale
+        iv = conformal.adaptive_conformal(
+            forecast, actual, level=0.90, warmup=24 * 10
+        )
+        scored = iv.dropna()
+        cov = conformal.coverage(actual[scored.index], scored["lo"], scored["hi"])
+        assert 0.85 <= cov <= 0.95
+
+    def test_warmup_rows_are_nan(self):
+        idx = hourly_index(24 * 60)
+        forecast = pd.Series(50.0, index=idx)
+        actual = forecast + 1.0
+        iv = conformal.adaptive_conformal(forecast, actual, level=0.8, warmup=24 * 30)
+        assert iv["lo"].iloc[: 24 * 30].isna().all()
+
+
 class TestCoverage:
     def test_exact_fraction(self):
         idx = hourly_index(10)

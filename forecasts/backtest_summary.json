@@ -5,9 +5,9 @@
     "training": "expanding, monthly retrain",
     "table": {
       "lightgbm": {
-        "MAE": 18.39,
-        "RMSE": 27.06,
-        "sMAPE": 39.17
+        "MAE": 16.85,
+        "RMSE": 24.67,
+        "sMAPE": 37.78
       },
       "naive_24h": {
         "MAE": 22.53,
@@ -23,13 +23,21 @@
   },
   "conformal": {
     "80": {
-      "coverage": 0.782,
-      "mean_width": 60.7
+      "coverage": 0.783,
+      "mean_width": 55.3
     },
     "95": {
-      "coverage": 0.945,
-      "mean_width": 120.7
+      "coverage": 0.947,
+      "mean_width": 108.0
     },
-    "calibration_window_days": 90
+    "calibration_window_days": 90,
+    "80_adaptive": {
+      "coverage": 0.8,
+      "mean_width": 56.9
+    },
+    "95_adaptive": {
+      "coverage": 0.95,
+      "mean_width": 102.8
+    }
   }
 }

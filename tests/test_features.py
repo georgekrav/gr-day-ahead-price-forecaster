@@ -102,6 +102,49 @@ class TestWeather:
             pd.testing.assert_series_equal(a.loc[before, col], b.loc[before, col])
 
 
+class TestResForecast:
+    def _res(self, idx: pd.DatetimeIndex) -> pd.DataFrame:
+        rng = np.random.default_rng(6)
+        return pd.DataFrame(
+            {
+                "res_fc_solar_mw": rng.uniform(0, 4000, len(idx)),
+                "res_fc_wind_mw": rng.uniform(0, 3000, len(idx)),
+            },
+            index=idx,
+        )
+
+    def test_res_and_weather_both_appended(self):
+        df = make_dataset()
+        out = features.build_features(
+            df,
+            weather=pd.DataFrame({"wx_solar_rad": 1.0}, index=df.index),
+            res_forecast=self._res(df.index),
+        )
+        # res_forecast first, then weather, then target
+        assert list(out.columns) == features.FEATURE_COLUMNS + [
+            "res_fc_solar_mw", "res_fc_wind_mw", "wx_solar_rad", "target",
+        ]
+
+    def test_res_is_same_hour(self):
+        df = make_dataset()
+        res = self._res(df.index)
+        out = features.build_features(df, res_forecast=res)
+        t = df.index[100]
+        assert out.loc[t, "res_fc_solar_mw"] == res.loc[t, "res_fc_solar_mw"]
+
+    def test_res_future_does_not_leak(self):
+        df = make_dataset()
+        res = self._res(df.index)
+        cutoff = df.index[120]
+        perturbed = res.copy()
+        perturbed.loc[perturbed.index > cutoff] += 10_000
+        a = features.build_features(df, res_forecast=res)
+        b = features.build_features(df, res_forecast=perturbed)
+        before = a.index <= cutoff
+        for col in ("res_fc_solar_mw", "res_fc_wind_mw"):
+            pd.testing.assert_series_equal(a.loc[before, col], b.loc[before, col])
+
+
 class TestNoLeakage:
     """Perturbing data after a cutoff must not change features before it."""
 

@@ -52,8 +52,17 @@ def main() -> None:
         print(f"warning: weather unavailable ({exc!r}); predicting without it",
               file=sys.stderr)
         wx = None
-    feats = features.build_features(df, weather=wx)
+    # res_forecast is downloaded above as part of SERIES and already covers
+    # the target day (it is a day-ahead forecast)
+    res = data.load_res_forecast()
+    feats = features.build_features(df, weather=wx, res_forecast=res)
     fold = feats.loc[target_index]
+    if fold["res_fc_solar_mw"].isna().all() and fold["res_fc_wind_mw"].isna().all():
+        print(
+            "warning: RES forecast for the target day not yet published;"
+            " predicting through LightGBM NaN routing",
+            file=sys.stderr,
+        )
     if fold["price_lag_24h"].isna().all():
         print("aborting: today's prices missing from cache", file=sys.stderr)
         sys.exit(1)

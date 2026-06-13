@@ -27,7 +27,9 @@ def main() -> None:
     args = parser.parse_args()
 
     df = data.load_processed()
-    feats = features.build_features(df, weather=weather.load_weather())
+    feats = features.build_features(
+        df, weather=weather.load_weather(), res_forecast=data.load_res_forecast()
+    )
     test_start = (
         feats.index.max() - pd.DateOffset(months=args.months) + pd.Timedelta("1h")
     )

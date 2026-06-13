@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 
+import numpy as np
 import pandas as pd
 
 from gr_epf.data import LOCAL_TZ
@@ -75,3 +76,98 @@ def coverage(actual: pd.Series, lo: pd.Series, hi: pd.Series) -> float:
     if df.empty:
         raise ValueError("no overlapping observations")
     return float(((df["y"] >= df["lo"]) & (df["y"] <= df["hi"])).mean())
+
+
+def adaptive_conformal(
+    forecast: pd.Series,
+    actual: pd.Series,
+    level: float,
+    gamma: float = 0.02,
+    lookback: int = 24 * 90,
+    warmup: int = 24 * 30,
+) -> pd.DataFrame:
+    """Adaptive Conformal Inference (Gibbs & Candes 2021), per-hour widths.
+
+    Static conformal assumes the error distribution is stationary; under
+    drift the empirical coverage slips below nominal. ACI tracks an
+    effective miscoverage rate alpha_t and nudges it after every hour: a
+    miss widens the next interval, a hit narrows it, keeping realized
+    coverage close to the target regardless of drift. Width still comes
+    from the per-hour-of-day pool of recent absolute residuals, so the
+    hour-to-hour structure is preserved.
+    """
+    s = pd.DataFrame({"f": forecast, "y": actual}).dropna().sort_index()
+    err = (s["y"] - s["f"]).abs().to_numpy()
+    fv, yv = s["f"].to_numpy(), s["y"].to_numpy()
+    hour = s.index.tz_convert(LOCAL_TZ).hour.to_numpy()
+    target = 1 - level
+    alpha = target
+    lo, hi = np.full(len(s), np.nan), np.full(len(s), np.nan)
+    for i in range(warmup, len(s)):
+        lo_idx = max(0, i - lookback)
+        mask = hour[lo_idx:i] == hour[i]
+        pool = err[lo_idx:i][mask]
+        if len(pool) == 0:
+            continue
+        width = float(np.quantile(pool, min(max(1 - alpha, 0.0), 1.0)))
+        lo[i], hi[i] = fv[i] - width, fv[i] + width
+        covered = lo[i] <= yv[i] <= hi[i]
+        alpha += gamma * (target - (0.0 if covered else 1.0))
+    return pd.DataFrame({"forecast": s["f"], "lo": lo, "hi": hi}, index=s.index)
+
+
+def adaptive_alpha(
+    forecast: pd.Series,
+    actual: pd.Series,
+    level: float,
+    gamma: float = 0.02,
+    lookback: int = 24 * 90,
+    warmup: int = 24 * 30,
+) -> float:
+    """Run ACI over (forecast, actual) and return the converged miscoverage.
+
+    The returned alpha is what the next interval should target; applying
+    its (1 - alpha) quantile to fresh forecasts carries the drift
+    correction forward without keeping per-hour online state.
+    """
+    s = pd.DataFrame({"f": forecast, "y": actual}).dropna().sort_index()
+    err = (s["y"] - s["f"]).abs().to_numpy()
+    fv, yv = s["f"].to_numpy(), s["y"].to_numpy()
+    hour = s.index.tz_convert(LOCAL_TZ).hour.to_numpy()
+    target = 1 - level
+    alpha = target
+    for i in range(warmup, len(s)):
+        lo_idx = max(0, i - lookback)
+        pool = err[lo_idx:i][hour[lo_idx:i] == hour[i]]
+        if len(pool) == 0:
+            continue
+        width = float(np.quantile(pool, min(max(1 - alpha, 0.0), 1.0)))
+        covered = fv[i] - width <= yv[i] <= fv[i] + width
+        alpha += gamma * (target - (0.0 if covered else 1.0))
+    return float(min(max(alpha, 0.0), 1.0))
+
+
+def adaptive_hourly_quantiles(
+    forecast: pd.Series,
+    actual: pd.Series,
+    levels: tuple[float, ...] = LEVELS,
+    lookback: int = 24 * 90,
+) -> pd.DataFrame:
+    """Per-hour interval half-widths at the ACI-converged effective level.
+
+    Drop-in replacement for hourly_quantiles that absorbs drift: instead of
+    the nominal (1 - level) quantile it uses (1 - adaptive_alpha), then reads
+    that quantile from the most recent `lookback` residuals per hour of day.
+    """
+    err = (actual - forecast).abs().dropna()
+    recent = err.iloc[-lookback:]
+    hours = recent.index.tz_convert(LOCAL_TZ).hour
+    out = {}
+    for level in levels:
+        eff = 1 - adaptive_alpha(forecast, actual, level, lookback=lookback)
+        out[_col(level)] = recent.groupby(hours).apply(
+            lambda e, q=eff: float(np.quantile(e, q))
+        )
+    table = pd.DataFrame(out)
+    table.index.name = "hour"
+    return table

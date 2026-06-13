@@ -36,7 +36,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = REPO_ROOT / "data" / "raw"
 PROCESSED_PATH = REPO_ROOT / "data" / "processed" / "hourly.parquet"
 
-SERIES = ("prices", "load_actual", "load_forecast", "generation")
+SERIES = ("prices", "load_actual", "load_forecast", "generation", "res_forecast")
 # Generation types kept in the processed dataset. Hydro = reservoir +
 # run-of-river; pumped storage is excluded: marginal in GR and it is a
 # storage asset (consumes to refill), not free inflow generation.
@@ -46,6 +46,10 @@ GEN_SIMPLE = {
     "Fossil Gas": "gen_fossil_gas_mw",
 }
 GEN_HYDRO = ("Hydro Water Reservoir", "Hydro Run-of-river and poundage")
+# Day-ahead wind/solar generation forecast (ENTSO-E A01). Published on D-1
+# before gate closure, so usable same-hour like load_forecast — the
+# operator's own forward view of tomorrow's RES output.
+RES_FORECAST_MAP = {"Solar": "res_fc_solar_mw", "Wind Onshore": "res_fc_wind_mw"}
 REQUEST_PAUSE_S = 0.6
 
 
@@ -97,6 +101,9 @@ def fetch_chunk(
             keep = [c for c in df.columns if c[-1] == "Actual Aggregated"]
             df = df[keep]
             df.columns = [c[0] for c in keep]
+    elif series == "res_forecast":
+        df = client.query_wind_and_solar_forecast(ZONE, start=start, end=end)
+        df = df.rename(columns=RES_FORECAST_MAP)[list(RES_FORECAST_MAP.values())]
     else:
         raise ValueError(f"unknown series {series!r}")
     df = df.tz_convert("UTC").sort_index()
@@ -213,3 +220,15 @@ def save_processed(df: pd.DataFrame, path: Path = PROCESSED_PATH) -> Path:
 
 def load_processed(path: Path = PROCESSED_PATH) -> pd.DataFrame:
     return pd.read_parquet(path)
+
+
+def load_res_forecast(raw_dir: Path = RAW_DIR) -> pd.DataFrame:
+    """Day-ahead wind/solar forecast as hourly res_fc_* columns, UTC index.
+
+    Kept out of the core hourly dataset and joined at feature time (like
+    weather), since it is a forecast feature, not a realized observation.
+    """
+    raw = load_raw("res_forecast", raw_dir)
+    return pd.DataFrame(
+        {col: resample_to_hourly(raw[col]) for col in raw.columns}
+    )

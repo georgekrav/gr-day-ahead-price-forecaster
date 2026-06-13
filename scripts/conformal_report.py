@@ -65,16 +65,28 @@ def main() -> None:
         summary[str(level)] = {"coverage": round(cov, 3), "mean_width": round(width, 1)}
         print(f"{level}% interval: empirical coverage {cov:.1%}, mean width {width:.1f} EUR/MWh")
     summary["calibration_window_days"] = args.calibration_window_days
+    print("adaptive conformal (ACI), single pass over the backtest:")
+    for level in (0.80, 0.95):
+        iv = conformal.adaptive_conformal(predicted, actual, level=level)
+        scored = iv.dropna()
+        cov = conformal.coverage(actual[scored.index], scored["lo"], scored["hi"])
+        width = (scored["hi"] - scored["lo"]).mean()
+        summary[f"{round(level * 100)}_adaptive"] = {
+            "coverage": round(cov, 3), "mean_width": round(width, 1)
+        }
+        print(f"{level:.0%} interval: empirical coverage {cov:.1%}, mean width {width:.1f}")
     forecast.update_json_section(
         data.REPO_ROOT / "forecasts" / "backtest_summary.json", "conformal", summary
     )
 
-    recent = bt.index >= end - window if window is not None else slice(None)
-    live_quantiles = conformal.hourly_quantiles(predicted[recent], actual[recent])
+    # Live calibration uses adaptive conformal: the ACI-converged effective
+    # level absorbs drift, so live coverage tracks nominal more closely than
+    # the static quantile (measured above).
+    live_quantiles = conformal.adaptive_hourly_quantiles(predicted, actual)
     out = data.REPO_ROOT / "forecasts" / "calibration.parquet"
     out.parent.mkdir(parents=True, exist_ok=True)
     live_quantiles.to_parquet(out)
-    print(f"\nlive calibration written to {out}")
+    print(f"\nadaptive live calibration written to {out}")
 
 
 if __name__ == "__main__":

@@ -25,7 +25,9 @@ def main() -> None:
     args = parser.parse_args()
 
     df = data.load_processed()
-    feats = features.build_features(df, weather=weather.load_weather())
+    feats = features.build_features(
+        df, weather=weather.load_weather(), res_forecast=data.load_res_forecast()
+    )
     cutoff = feats.index.max() - pd.Timedelta(days=args.holdout_days)
     train = feats[feats.index <= cutoff]
     holdout = feats[feats.index > cutoff]
