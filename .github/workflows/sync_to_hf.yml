@@ -34,7 +34,7 @@ jobs:
             echo "HF_TOKEN secret not set; skipping sync" && exit 0
           fi
           stage=$(mktemp -d)
-          cp -r app forecasts "$stage/"
+          cp -r app forecasts assets "$stage/"
           cp .hf/README.md "$stage/README.md"
           cp .hf/requirements.txt "$stage/requirements.txt"
           cd "$stage"
