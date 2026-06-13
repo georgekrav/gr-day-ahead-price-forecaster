@@ -310,8 +310,9 @@ rows["time_local"] = pd.to_datetime(rows["time_local"], utc=True).dt.tz_convert(
     "Europe/Athens"
 )
 
+target_day_fmt = pd.Timestamp(latest["target_day"]).strftime("%d/%m/%Y")
 st.subheader(
-    f"{t('forecast_for')} {latest['target_day']}", help=t("help_forecast_for")
+    f"{t('forecast_for')} {target_day_fmt}", help=t("help_forecast_for")
 )
 peak = rows.loc[rows["forecast"].idxmax()]
 trough = rows.loc[rows["forecast"].idxmin()]
@@ -329,7 +330,7 @@ c3.metric(
 )
 c4.metric(
     t("generated"),
-    f"{pd.Timestamp(latest['generated_at_utc']):%d %b %H:%M} UTC",
+    f"{pd.Timestamp(latest['generated_at_utc']):%d/%m/%Y %H:%M} UTC",
     help=t("help_generated"),
 )
 st.plotly_chart(band_figure(rows, t), use_container_width=True)
