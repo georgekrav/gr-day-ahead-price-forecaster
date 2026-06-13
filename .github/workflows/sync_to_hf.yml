@@ -39,6 +39,10 @@ jobs:
           cp .hf/requirements.txt "$stage/requirements.txt"
           cd "$stage"
           git init -b main -q
+          # HF Spaces rejects plain binary files; track images and parquet
+          # via Git LFS so the PNGs and forecast files push cleanly
+          git lfs install --local
+          git lfs track "*.png" "*.parquet" >/dev/null
           git -c user.name="github-actions[bot]" \
               -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
               add -A
