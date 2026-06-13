@@ -46,9 +46,10 @@ def main() -> None:
 
     shap.summary_plot(shap_values, sample, plot_type="bar", show=False)
     plt.title("Global feature importance (mean |SHAP|, EUR/MWh)")
+    plt.gcf().set_size_inches(7, 4.5)
     plt.tight_layout()
     bar_path = data.REPO_ROOT / "assets" / "shap_bar.png"
-    plt.savefig(bar_path, dpi=150, bbox_inches="tight")
+    plt.savefig(bar_path, dpi=110, bbox_inches="tight")
     plt.close()
 
     shap.summary_plot(shap_values, sample, show=False)

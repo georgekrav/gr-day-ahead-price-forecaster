@@ -278,6 +278,10 @@ def track_record_figure(recent: pd.DataFrame, t) -> go.Figure:
 
 
 st.set_page_config(page_title="GR Day-Ahead Price Forecast", layout="wide")
+# Force the vertical scrollbar to always show: otherwise it appears/hides as
+# content height crosses the viewport, resizing the full-width charts in a
+# loop — the "flicker" seen on the Space.
+st.markdown("<style>html { overflow-y: scroll; }</style>", unsafe_allow_html=True)
 
 head_left, head_right = st.columns([5, 1])
 with head_right:
@@ -364,8 +368,11 @@ if summary and "metrics" in summary:
 shap_bar = ROOT / "assets" / "shap_bar.png"
 if shap_bar.exists():
     st.subheader(t("shap_title"), help=t("help_shap"))
-    st.image(str(shap_bar), use_container_width=True)
-    st.caption(t("shap_caption"))
+    # fixed width in a centred column: a full-width stretch of this PNG made
+    # the page reflow/flicker on the Space
+    left, mid, right = st.columns([1, 2, 1])
+    mid.image(str(shap_bar), width=640)
+    mid.caption(t("shap_caption"))
 
 with st.expander(t("how_title")):
     first, second = (HOW_EL, HOW_EN) if code == "el" else (HOW_EN, HOW_EL)
