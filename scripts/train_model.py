@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from gr_epf import data, evaluate, features, models
+from gr_epf import data, evaluate, features, models, weather
 
 
 def main() -> None:
@@ -25,7 +25,7 @@ def main() -> None:
     args = parser.parse_args()
 
     df = data.load_processed()
-    feats = features.build_features(df)
+    feats = features.build_features(df, weather=weather.load_weather())
     cutoff = feats.index.max() - pd.Timedelta(days=args.holdout_days)
     train = feats[feats.index <= cutoff]
     holdout = feats[feats.index > cutoff]

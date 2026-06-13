@@ -15,6 +15,10 @@ Availability per feature:
   delay, so at issue time on D-1 only day D-2 is fully complete. A 24h
   generation lag would leak: afternoon hours of D-1 are not yet published
   at 12:00 CET. Hence the minimum generation lag is 48h.
+- wx_* (optional): weather is a day-ahead forecast available before gate
+  closure, so it is used same-hour (no lag) — the one forward-looking
+  signal for tomorrow's solar and wind output. See gr_epf.weather for the
+  archive-as-proxy / live-forecast leakage handling.
 """
 
 from __future__ import annotations
@@ -50,11 +54,17 @@ FEATURE_COLUMNS = [
 ]
 
 
-def build_features(df: pd.DataFrame) -> pd.DataFrame:
+def build_features(
+    df: pd.DataFrame, weather: pd.DataFrame | None = None
+) -> pd.DataFrame:
     """Feature matrix + 'target' column, on the same UTC index as df.
 
     Rows with NaN features are kept: LightGBM handles missing values
     natively and the known data gaps total ~30 hours in three years.
+
+    If weather is given, its columns are joined same-hour (weather is a
+    day-ahead forecast, so unlike generation it needs no lag) and appended
+    after the base features. See gr_epf.weather for the leakage rationale.
     """
     local = df.index.tz_convert(LOCAL_TZ)
     price = df["price_eur_mwh"]
@@ -70,6 +80,10 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     out["load_forecast_mw"] = df["load_forecast_mw"]
     for col in GEN_COLUMNS:
         out[f"{col}_lag_{GEN_LAG_H}h"] = naive_forecast(df[col], GEN_LAG_H)
+    assert list(out.columns) == FEATURE_COLUMNS
+    if weather is not None:
+        wx = weather.reindex(df.index)
+        for col in wx.columns:
+            out[col] = wx[col]
     out["target"] = price
-    assert list(out.columns) == FEATURE_COLUMNS + ["target"]
     return out

@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from gr_epf import data, evaluate, features, forecast, models
+from gr_epf import data, evaluate, features, forecast, models, weather
 
 
 def main() -> None:
@@ -27,7 +27,7 @@ def main() -> None:
     args = parser.parse_args()
 
     df = data.load_processed()
-    feats = features.build_features(df)
+    feats = features.build_features(df, weather=weather.load_weather())
     test_start = (
         feats.index.max() - pd.DateOffset(months=args.months) + pd.Timedelta("1h")
     )

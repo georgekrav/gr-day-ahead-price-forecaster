@@ -17,7 +17,7 @@ import sys
 
 import pandas as pd
 
-from gr_epf import conformal, data, features, forecast, models
+from gr_epf import conformal, data, features, forecast, models, weather
 
 
 def main() -> None:
@@ -46,7 +46,13 @@ def main() -> None:
         inclusive="left",
     )
     df = df.reindex(df.index.union(target_index))
-    feats = features.build_features(df)
+    try:
+        wx = weather.build_live_weather()
+    except Exception as exc:
+        print(f"warning: weather unavailable ({exc!r}); predicting without it",
+              file=sys.stderr)
+        wx = None
+    feats = features.build_features(df, weather=wx)
     fold = feats.loc[target_index]
     if fold["price_lag_24h"].isna().all():
         print("aborting: today's prices missing from cache", file=sys.stderr)

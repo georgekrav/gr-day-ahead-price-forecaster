@@ -63,6 +63,45 @@ class TestCalendar:
         assert (day_after == 0).all()
 
 
+class TestWeather:
+    def _weather(self, idx: pd.DatetimeIndex) -> pd.DataFrame:
+        rng = np.random.default_rng(5)
+        return pd.DataFrame(
+            {
+                "wx_solar_rad": rng.uniform(0, 900, len(idx)),
+                "wx_wind_100m": rng.uniform(0, 40, len(idx)),
+            },
+            index=idx,
+        )
+
+    def test_weather_columns_appended_after_base(self):
+        df = make_dataset()
+        out = features.build_features(df, weather=self._weather(df.index))
+        assert list(out.columns) == features.FEATURE_COLUMNS + [
+            "wx_solar_rad", "wx_wind_100m", "target",
+        ]
+
+    def test_weather_is_same_hour_not_lagged(self):
+        # weather is a day-ahead forecast, so same-hour use is legitimate
+        df = make_dataset()
+        wx = self._weather(df.index)
+        out = features.build_features(df, weather=wx)
+        t = df.index[100]
+        assert out.loc[t, "wx_solar_rad"] == wx.loc[t, "wx_solar_rad"]
+
+    def test_weather_future_does_not_leak_into_past(self):
+        df = make_dataset()
+        wx = self._weather(df.index)
+        cutoff = df.index[120]
+        perturbed = wx.copy()
+        perturbed.loc[perturbed.index > cutoff] += 10_000
+        a = features.build_features(df, weather=wx)
+        b = features.build_features(df, weather=perturbed)
+        before = a.index <= cutoff
+        for col in ("wx_solar_rad", "wx_wind_100m"):
+            pd.testing.assert_series_equal(a.loc[before, col], b.loc[before, col])
+
+
 class TestNoLeakage:
     """Perturbing data after a cutoff must not change features before it."""
 

@@ -48,6 +48,7 @@ when it becomes available relative to that moment:
 | hour, weekday, month, GR holidays | deterministic calendar (Europe/Athens) |
 | day-ahead load forecast for D | published ~10:00 CET on D-1 |
 | generation lags **48 h** | actuals publish with ~1 h delay, so D-2 is the last complete day — a 24 h lag would leak the unpublished afternoon of D-1 |
+| weather (solar radiation, wind, temperature, cloud), **same-hour** | a day-ahead forecast available before gate closure; the one forward-looking signal for tomorrow's solar/wind output (Open-Meteo) |
 
 Tests enforce this: perturbing data after a cutoff must leave all earlier
 features unchanged, perturbing same-hour actuals must leave that hour's
@@ -61,21 +62,30 @@ by a model that had never seen it or anything after it.
 
 | model | MAE | RMSE | sMAPE |
 |---|---|---|---|
-| **LightGBM (l1)** | **19.27** | **28.30** | **40.6** |
+| **LightGBM + weather (l1)** | **18.39** | **27.06** | **39.2** |
+| LightGBM, no weather | 19.27 | 28.30 | 40.6 |
 | naive-24h (same hour yesterday) | 22.53 | 34.31 | 46.0 |
 | seasonal-naive-168h (same hour last week) | 27.70 | 41.33 | 52.1 |
 
-14.5% MAE and 17.5% RMSE improvement over the strongest baseline, ahead at
-every hour of day except a tie at solar noon. The gains concentrate where
-naive forecasts fail: the morning ramp (-29% at 07:00) and the evening peak
-(-25% at 17:00-19:00).
+18.4% MAE improvement over the strongest baseline. Without weather the model
+already beats the baselines at every hour of day except a tie at solar noon.
 
 ![MAE by hour of day](assets/backtest_error_by_hour.png)
 
-A rolling 365-day training window was tested and is slightly worse
-(MAE 19.96): monthly retraining already handles the drift, so the extra
-history is pure signal. sMAPE is reported for comparability with the EPF
-literature but is unstable when prices cross zero — MAE is the headline.
+**Weather features.** Adding Open-Meteo day-ahead forecasts (solar radiation,
+wind speed, temperature, cloud cover, averaged over four Greek centres)
+lowers MAE from 19.27 to 18.39 (−4.6%). The improvement is stable across
+random seeds (−4.15% ± 0.42) and helps all 24 hours of the day, with the
+biggest gains exactly at the solar-noon and evening-peak hours where lagged
+generation cannot anticipate a sunny low-demand day. See
+`scripts/experiment_weather.py` for the per-configuration A/B and
+`src/gr_epf/weather.py` for the leakage handling (realized weather as a
+proxy in the backtest; a genuine day-ahead forecast live).
+
+A rolling 365-day training window was tested and is slightly worse: monthly
+retraining already handles the drift, so the extra history is pure signal.
+sMAPE is reported for comparability with the EPF literature but is unstable
+when prices cross zero — MAE is the headline.
 
 ### Prediction intervals
 
@@ -195,6 +205,7 @@ GitHub Actions.
 | ώρα, ημέρα, μήνας, αργίες | ντετερμινιστικό ημερολόγιο (Europe/Athens) |
 | πρόβλεψη φορτίου για την D | δημοσιεύεται ~10:00 CET της D-1 |
 | υστερήσεις παραγωγής **48 ω.** | τα πραγματικά δημοσιεύονται με ~1 ώρα καθυστέρηση, άρα η D-2 είναι η τελευταία πλήρης μέρα — υστέρηση 24 ω. θα διέρρεε το αδημοσίευτο απόγευμα της D-1 |
+| καιρός (ηλιακή ακτινοβολία, άνεμος, θερμοκρασία, νέφωση), **ίδια ώρα** | πρόβλεψη επόμενης ημέρας διαθέσιμη πριν το κλείσιμο· το μόνο forward-looking σήμα για την αυριανή ηλιακή/αιολική παραγωγή (Open-Meteo) |
 
 Αυτά επιβάλλονται από tests: διαταραχή των δεδομένων μετά από ένα σημείο
 πρέπει να αφήνει όλα τα προγενέστερα features ανέγγιχτα, και το κατώφλι
@@ -208,23 +219,33 @@ GitHub Actions.
 
 | μοντέλο | MAE | RMSE | sMAPE |
 |---|---|---|---|
-| **LightGBM (l1)** | **19,27** | **28,30** | **40,6** |
+| **LightGBM + καιρός (l1)** | **18,39** | **27,06** | **39,2** |
+| LightGBM, χωρίς καιρό | 19,27 | 28,30 | 40,6 |
 | naive-24h (ίδια ώρα χθες) | 22,53 | 34,31 | 46,0 |
 | seasonal-naive-168h (ίδια ώρα πριν 1 εβδ.) | 27,70 | 41,33 | 52,1 |
 
-Βελτίωση 14,5% στο MAE και 17,5% στο RMSE από το ισχυρότερο baseline, με
-το μοντέλο μπροστά σε κάθε ώρα της ημέρας εκτός από ισοπαλία στο ηλιακό
-μεσημέρι. Τα κέρδη συγκεντρώνονται εκεί όπου τα naive αποτυγχάνουν: στην
-πρωινή άνοδο (−29% στις 07:00) και στη βραδινή αιχμή (−25% στις
-17:00–19:00).
+Βελτίωση 18,4% στο MAE από το ισχυρότερο baseline. Ακόμη και χωρίς καιρό
+το μοντέλο νικά τα baselines σε κάθε ώρα της ημέρας εκτός από ισοπαλία
+στο ηλιακό μεσημέρι.
 
 ![MAE ανά ώρα της ημέρας](assets/backtest_error_by_hour.png)
 
+**Χαρακτηριστικά καιρού.** Η προσθήκη προβλέψεων Open-Meteo επόμενης ημέρας
+(ηλιακή ακτινοβολία, ταχύτητα ανέμου, θερμοκρασία, νέφωση — μέσος όρος
+τεσσάρων ελληνικών κέντρων) ρίχνει το MAE από 19,27 σε 18,39 (−4,6%). Η
+βελτίωση είναι σταθερή σε διαφορετικά random seeds (−4,15% ± 0,42) και
+βοηθάει και τις 24 ώρες, με τα μεγαλύτερα κέρδη ακριβώς στις ώρες του
+ηλιακού μεσημεριού και της βραδινής αιχμής, εκεί όπου η παραγωγή με
+υστέρηση δεν μπορεί να προβλέψει μια ηλιόλουστη μέρα χαμηλής ζήτησης. Βλ.
+`scripts/experiment_weather.py` για τη σύγκριση A/B ανά διαμόρφωση και
+`src/gr_epf/weather.py` για τον χειρισμό διαρροής (πραγματικός καιρός ως
+proxy στο backtest· πραγματική πρόβλεψη επόμενης ημέρας ζωντανά).
+
 Δοκιμάστηκε και κυλιόμενο παράθυρο εκπαίδευσης 365 ημερών — ελαφρώς
-χειρότερο (MAE 19,96): η μηνιαία επανεκπαίδευση αρκεί για την προσαρμογή,
-οπότε η επιπλέον ιστορία είναι καθαρό σήμα. Το sMAPE αναφέρεται για
-συγκρισιμότητα με τη βιβλιογραφία αλλά είναι ασταθές όταν οι τιμές
-περνούν το μηδέν — επίσημη μετρική είναι το MAE.
+χειρότερο: η μηνιαία επανεκπαίδευση αρκεί για την προσαρμογή, οπότε η
+επιπλέον ιστορία είναι καθαρό σήμα. Το sMAPE αναφέρεται για συγκρισιμότητα
+με τη βιβλιογραφία αλλά είναι ασταθές όταν οι τιμές περνούν το μηδέν —
+επίσημη μετρική είναι το MAE.
 
 ### Διαστήματα πρόβλεψης
 
