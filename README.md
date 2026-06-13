@@ -2,6 +2,8 @@
 
 *English first — [Ελληνικά παρακάτω](#ελληνικά).*
 
+**Live demo:** https://huggingface.co/spaces/georgekrav/gr-day-ahead-price-forecast
+
 Hourly day-ahead electricity price forecasting for the Greek bidding zone
 (EIC `10YGR-HTSO-----Y`), built on ENTSO-E Transparency Platform data.
 LightGBM against naive baselines, walk-forward backtesting, split-conformal
@@ -143,6 +145,8 @@ data/              local parquet cache (gitignored)
 ---
 
 # Ελληνικά
+
+**Ζωντανή εφαρμογή:** https://huggingface.co/spaces/georgekrav/gr-day-ahead-price-forecast
 
 Ωριαία πρόβλεψη των τιμών ηλεκτρικής ενέργειας επόμενης ημέρας για την
 ελληνική ζώνη προσφορών (EIC `10YGR-HTSO-----Y`), πάνω σε δεδομένα της
