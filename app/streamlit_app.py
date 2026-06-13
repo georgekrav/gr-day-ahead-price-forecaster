@@ -62,6 +62,23 @@ STRINGS = {
         " {c95:.1%} (στόχος 95%) στο backtest.",
     },
     "how_title": {"en": "How it works", "el": "Πώς λειτουργεί"},
+    "shap_title": {"en": "How the model decides", "el": "Πώς αποφασίζει το μοντέλο"},
+    "help_shap": {
+        "en": "SHAP attributes each prediction to its features. The bars show"
+        " the average impact (in EUR/MWh) of each feature on the forecast —"
+        " which inputs the model leans on most.",
+        "el": "Το SHAP αποδίδει κάθε πρόβλεψη στα χαρακτηριστικά της. Οι μπάρες"
+        " δείχνουν τη μέση επίδραση (σε EUR/MWh) κάθε χαρακτηριστικού στην"
+        " πρόβλεψη — σε ποιες εισόδους στηρίζεται περισσότερο το μοντέλο.",
+    },
+    "shap_caption": {
+        "en": "Yesterday's price dominates, followed by the day-ahead RES"
+        " generation forecast: more forecast solar/wind pushes the price down"
+        " (the duck curve), which is the physically correct relationship.",
+        "el": "Κυριαρχεί η χθεσινή τιμή, ακολουθεί η πρόβλεψη παραγωγής ΑΠΕ"
+        " επόμενης ημέρας: περισσότερη προβλεπόμενη ηλιακή/αιολική ρίχνει την"
+        " τιμή (καμπύλη πάπιας) — η φυσικά σωστή σχέση.",
+    },
     "help_title": {
         "en": "Every morning, before the day-ahead auction closes (12:00 CET),"
         " this app forecasts all 24 hourly wholesale electricity prices for"
@@ -343,6 +360,12 @@ if summary and "metrics" in summary:
                 c95=conf["95"]["coverage"],
             )
         )
+
+shap_bar = ROOT / "assets" / "shap_bar.png"
+if shap_bar.exists():
+    st.subheader(t("shap_title"), help=t("help_shap"))
+    st.image(str(shap_bar), use_container_width=True)
+    st.caption(t("shap_caption"))
 
 with st.expander(t("how_title")):
     first, second = (HOW_EL, HOW_EN) if code == "el" else (HOW_EN, HOW_EL)

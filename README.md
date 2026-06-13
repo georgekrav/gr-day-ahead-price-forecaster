@@ -100,6 +100,16 @@ little MAE for a little RMSE — so the single LightGBM is kept.
 sMAPE is reported for comparability with the EPF literature but is unstable
 when prices cross zero — MAE is the headline.
 
+### Explainability (SHAP)
+
+`scripts/shap_analysis.py` attributes predictions to features with a
+TreeExplainer. Yesterday's price dominates (mean |SHAP| ≈ 22 EUR/MWh),
+followed by the day-ahead solar forecast (≈ 13) and wind forecast (≈ 6).
+The beeswarm confirms the model learned the correct physics: a high
+forecast solar value pushes the predicted price *down* (the duck curve),
+not a spurious correlation. Weather features rank low — visual confirmation
+that the RES forecast subsumes them.
+
 ### Prediction intervals
 
 Hand-rolled split-conformal, calibrated per hour of day (errors at 04:00
@@ -275,6 +285,16 @@ GitHub Actions.
 
 Το sMAPE αναφέρεται για συγκρισιμότητα με τη βιβλιογραφία αλλά είναι
 ασταθές όταν οι τιμές περνούν το μηδέν — επίσημη μετρική είναι το MAE.
+
+### Ερμηνευσιμότητα (SHAP)
+
+Το `scripts/shap_analysis.py` αποδίδει τις προβλέψεις στα χαρακτηριστικά με
+TreeExplainer. Κυριαρχεί η χθεσινή τιμή (μέσο |SHAP| ≈ 22 EUR/MWh),
+ακολουθεί η πρόβλεψη ηλιακής παραγωγής (≈ 13) και αιολικής (≈ 6). Το
+beeswarm επιβεβαιώνει ότι το μοντέλο έμαθε τη σωστή φυσική: υψηλή
+προβλεπόμενη ηλιακή ωθεί την τιμή *κάτω* (καμπύλη πάπιας), όχι κάποια
+ψευδή συσχέτιση. Τα χαρακτηριστικά καιρού κατατάσσονται χαμηλά — οπτική
+επιβεβαίωση ότι η πρόβλεψη ΑΠΕ τα υποκαθιστά.
 
 ### Διαστήματα πρόβλεψης
 
