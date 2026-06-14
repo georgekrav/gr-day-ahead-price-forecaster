@@ -66,6 +66,11 @@ def main() -> None:
         sys.exit(1)
 
     df = data.build_hourly_dataset()
+    # The backtest uses the ERA5 weather archive (realized weather as a proxy
+    # for the day-ahead forecast). It is cached under data/ (gitignored), so a
+    # cold CI runner has to fetch it -- Open-Meteo, free, no key.
+    if not (weather.WEATHER_DIR / "archive.parquet").exists():
+        weather.download_archive()
     feats = features.build_features(
         df, weather=weather.load_weather(), res_forecast=data.load_res_forecast()
     )
