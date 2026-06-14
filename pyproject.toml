@@ -8,26 +8,32 @@ version = "0.1.0"
 description = "Day-ahead electricity price forecasting for the Greek bidding zone (ENTSO-E data)"
 readme = "README.md"
 requires-python = ">=3.11"
+# Upper bounds cap the next major of every direct dependency: the daily and
+# monthly jobs run unattended with a fresh `pip install`, so an unpinned major
+# release is the one thing that could break them with no code change. Minors
+# and patches stay open for security fixes. Floors are the versions verified
+# in CI on 2026-06-14. Bump a cap deliberately and let CI re-verify.
 dependencies = [
-    "entsoe-py>=0.6.8",
-    "pandas>=2.0",
-    "pyarrow>=14",
-    "lightgbm>=4.0",
-    "scikit-learn>=1.4",
-    "matplotlib>=3.8",
-    "plotly>=5.18",
-    "streamlit>=1.30",
-    "holidays>=0.40",
-    "python-dotenv>=1.0",
-    "requests>=2.31",
+    "entsoe-py>=0.8,<0.9",
+    "pandas>=2.0,<4",
+    "numpy>=1.23,<3",
+    "pyarrow>=14,<25",
+    "lightgbm>=4.0,<5",
+    "scikit-learn>=1.4,<2",
+    "matplotlib>=3.8,<4",
+    "plotly>=5.18,<7",
+    "streamlit>=1.30,<2",
+    "holidays>=0.40,<1",
+    "python-dotenv>=1.0,<2",
+    "requests>=2.31,<3",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8",
-    "ruff>=0.4",
-    "jupyterlab>=4",
-    "shap>=0.44",
+    "pytest>=8,<10",
+    "ruff>=0.4,<1",
+    "jupyterlab>=4,<5",
+    "shap>=0.44,<1",
 ]
 
 [tool.setuptools.packages.find]

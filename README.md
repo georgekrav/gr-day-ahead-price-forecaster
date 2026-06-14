@@ -71,6 +71,12 @@ by a model that had never seen it or anything after it.
 
 **25% MAE improvement over the strongest baseline.**
 
+> The numbers in this table are a fixed snapshot. The live app reads
+> `forecasts/backtest_summary.json`, which the monthly recalibration job
+> refreshes on the latest 12-month window (see [Automation](#automation)), so
+> the deployed figures shift slightly month to month while the ~25% margin
+> over naive holds.
+
 ![MAE by hour of day](assets/backtest_error_by_hour.png)
 
 **Feature ablation (walk-forward).** Each forecast feature was validated
@@ -269,6 +275,13 @@ GitHub Actions.
 | seasonal-naive-168h (ίδια ώρα πριν 1 εβδ.) | 27,70 | 41,33 | 52,1 |
 
 **Βελτίωση 25% στο MAE από το ισχυρότερο baseline.**
+
+> Οι αριθμοί του πίνακα είναι ένα σταθερό στιγμιότυπο. Η ζωντανή εφαρμογή
+> διαβάζει το `forecasts/backtest_summary.json`, που το μηνιαίο job
+> επαναβαθμονόμησης ανανεώνει στο πιο πρόσφατο 12μηνο παράθυρο (βλ.
+> [Αυτοματοποίηση](#αυτοματοποίηση)), οπότε τα νούμερα στο deployment
+> μετατοπίζονται ελαφρώς από μήνα σε μήνα ενώ το ~25% περιθώριο έναντι του
+> naive διατηρείται.
 
 ![MAE ανά ώρα της ημέρας](assets/backtest_error_by_hour.png)
 
