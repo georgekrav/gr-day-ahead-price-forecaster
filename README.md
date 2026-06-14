@@ -1,6 +1,7 @@
 # GR Day-Ahead Electricity Price Forecaster
 
 *English first — [Ελληνικά παρακάτω](#ελληνικά).*
+Πρόβλεψη τιμών ηλεκτρικής ενέργειας επόμενης ημέρας για την Eλλάδα (ENTSO-E): leakage-free, LightGBM που νικά τα naive baselines κατά 25%, conformal διαστήματα αβεβαιότητας, και ζωντανή εφαρμογή με καθημερινή αυτόματη ανανέωση.
 
 **Live demo:** https://huggingface.co/spaces/georgekrav/gr-day-ahead-price-forecast
 
