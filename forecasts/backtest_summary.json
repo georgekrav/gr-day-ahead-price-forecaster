@@ -1,43 +1,43 @@
 {
   "metrics": {
-    "window_start": "2025-06-11 21:00:00+00:00",
-    "window_end": "2026-06-11 20:00:00+00:00",
+    "window_start": "2025-06-15 21:00:00+00:00",
+    "window_end": "2026-06-15 20:00:00+00:00",
     "training": "expanding, monthly retrain",
     "table": {
       "lightgbm": {
-        "MAE": 16.85,
-        "RMSE": 24.67,
-        "sMAPE": 37.78
+        "MAE": 17.1,
+        "RMSE": 24.96,
+        "sMAPE": 38.38
       },
       "naive_24h": {
-        "MAE": 22.53,
-        "RMSE": 34.31,
-        "sMAPE": 46.04
+        "MAE": 22.75,
+        "RMSE": 34.63,
+        "sMAPE": 46.19
       },
       "seasonal_naive_168h": {
-        "MAE": 27.7,
-        "RMSE": 41.33,
-        "sMAPE": 52.14
+        "MAE": 27.76,
+        "RMSE": 41.41,
+        "sMAPE": 52.13
       }
     }
   },
   "conformal": {
     "80": {
-      "coverage": 0.783,
+      "coverage": 0.781,
       "mean_width": 55.3
     },
     "95": {
-      "coverage": 0.947,
-      "mean_width": 108.0
+      "coverage": 0.944,
+      "mean_width": 107.2
     },
     "calibration_window_days": 90,
     "80_adaptive": {
-      "coverage": 0.8,
-      "mean_width": 56.9
+      "coverage": 0.799,
+      "mean_width": 57.2
     },
     "95_adaptive": {
       "coverage": 0.95,
-      "mean_width": 102.8
+      "mean_width": 105.0
     }
   }
 }
