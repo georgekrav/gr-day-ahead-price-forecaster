@@ -33,48 +33,30 @@ def main() -> None:
 
     bt = pd.read_parquet(data.REPO_ROOT / "data" / "reports" / "backtest_predictions.parquet")
     predicted, actual = bt["forecast"], bt["actual"]
-    window = (
-        pd.Timedelta(days=args.calibration_window_days)
-        if args.calibration_window_days
-        else None
+
+    summary = conformal.coverage_summary(
+        predicted,
+        actual,
+        warmup_months=args.warmup_months,
+        calibration_window_days=args.calibration_window_days,
+        recalibrate_days=args.recalibrate_days,
     )
-
-    folds = []
-    cur = bt.index.min() + pd.DateOffset(months=args.warmup_months)
-    end = bt.index.max()
-    step = pd.Timedelta(days=args.recalibrate_days)
-    while cur <= end:
-        nxt = cur + step
-        past = bt.index < cur
-        if window is not None:
-            past &= bt.index >= cur - window
-        quantiles = conformal.hourly_quantiles(predicted[past], actual[past])
-        fold = predicted[(bt.index >= cur) & (bt.index < nxt)]
-        folds.append(conformal.apply_intervals(fold, quantiles))
-        cur = nxt
-    intervals = pd.concat(folds)
-    y = actual[intervals.index]
-
-    print(f"evaluation window: {intervals.index.min()} -> {intervals.index.max()}")
-    print(f"{len(intervals)} hours, calibration walk-forward, warmup {args.warmup_months} months")
+    print(f"backtest window: {bt.index.min()} -> {bt.index.max()}")
+    print(f"{len(bt)} hours, calibration walk-forward, warmup {args.warmup_months} months")
     print()
-    summary = {}
     for level in (80, 95):
-        cov = conformal.coverage(y, intervals[f"lo_{level}"], intervals[f"hi_{level}"])
-        width = (intervals[f"hi_{level}"] - intervals[f"lo_{level}"]).mean()
-        summary[str(level)] = {"coverage": round(cov, 3), "mean_width": round(width, 1)}
-        print(f"{level}% interval: empirical coverage {cov:.1%}, mean width {width:.1f} EUR/MWh")
-    summary["calibration_window_days"] = args.calibration_window_days
+        s = summary[str(level)]
+        print(
+            f"{level}% interval: empirical coverage {s['coverage']:.1%},"
+            f" mean width {s['mean_width']:.1f} EUR/MWh"
+        )
     print("adaptive conformal (ACI), single pass over the backtest:")
-    for level in (0.80, 0.95):
-        iv = conformal.adaptive_conformal(predicted, actual, level=level)
-        scored = iv.dropna()
-        cov = conformal.coverage(actual[scored.index], scored["lo"], scored["hi"])
-        width = (scored["hi"] - scored["lo"]).mean()
-        summary[f"{round(level * 100)}_adaptive"] = {
-            "coverage": round(cov, 3), "mean_width": round(width, 1)
-        }
-        print(f"{level:.0%} interval: empirical coverage {cov:.1%}, mean width {width:.1f}")
+    for level in (80, 95):
+        s = summary[f"{level}_adaptive"]
+        print(
+            f"{level}% interval: empirical coverage {s['coverage']:.1%},"
+            f" mean width {s['mean_width']:.1f}"
+        )
     forecast.update_json_section(
         data.REPO_ROOT / "forecasts" / "backtest_summary.json", "conformal", summary
     )

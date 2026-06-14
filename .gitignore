@@ -22,3 +22,6 @@ dist/
 
 # Local-only documentation (Greek guide docx)
 docs/
+
+# Local pre-edit backups
+backup/

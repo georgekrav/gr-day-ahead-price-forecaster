@@ -1,0 +1,68 @@
+# Monthly recalibration + release gate, on the 1st of each month at 03:00
+# UTC. The daily job retrains the model every morning, so this is NOT a model
+# retrain: it refreshes the conformal calibration and the published backtest
+# metrics from a fresh walk-forward run, but only if the model still clearly
+# beats the naive baseline (the gate in gr_epf.governance). A failed gate
+# leaves the live artifacts untouched and fails the run, emailing the
+# maintainer instead of shipping a degraded calibration.
+name: Monthly recalibration
+
+on:
+  schedule:
+    - cron: "0 3 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monthly-recalibration
+  cancel-in-progress: false
+
+jobs:
+  recalibrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -e .
+
+      # Cold runner rebuilds the full 3-year history (~5 min); the daily job
+      # and this one share the same cache key prefix.
+      - uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: entsoe-raw-${{ github.run_id }}
+          restore-keys: |
+            entsoe-raw-
+
+      - name: Recalibrate and gate
+        env:
+          ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
+        run: python scripts/monthly_revalidation.py
+
+      - name: Commit refreshed artifacts
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add forecasts/
+          if git diff --cached --quiet; then
+            echo "no changes to commit"
+            exit 0
+          fi
+          git commit -m "Monthly recalibration $(date -u +%F)"
+          git pull --rebase origin main
+          git push
+
+  # The gate may refresh the published metrics shown in the app, so mirror
+  # them to the Space (bot commits do not fire the push-trigger sync).
+  sync:
+    needs: recalibrate
+    uses: ./.github/workflows/sync_to_hf.yml
+    secrets: inherit

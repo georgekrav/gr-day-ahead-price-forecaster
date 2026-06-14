@@ -73,6 +73,23 @@ class TestAdaptiveConformal:
         assert iv["lo"].iloc[: 24 * 30].isna().all()
 
 
+class TestCoverageSummary:
+    def test_returns_static_and_adaptive_levels(self):
+        idx = hourly_index(24 * 200)
+        rng = np.random.default_rng(7)
+        forecast = pd.Series(100.0, index=idx)
+        actual = forecast + rng.normal(0, 5, len(idx))
+        summary = conformal.coverage_summary(
+            forecast, actual, warmup_months=1, calibration_window_days=60
+        )
+        assert summary["calibration_window_days"] == 60
+        for key in ("80", "95", "80_adaptive", "95_adaptive"):
+            assert 0.0 <= summary[key]["coverage"] <= 1.0
+            assert summary[key]["mean_width"] > 0
+        # the wider nominal level must cover at least as much as the narrower
+        assert summary["95"]["coverage"] >= summary["80"]["coverage"]
+
+
 class TestCoverage:
     def test_exact_fraction(self):
         idx = hourly_index(10)

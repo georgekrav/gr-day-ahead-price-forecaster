@@ -139,6 +139,19 @@ forecasts day D+1 with intervals, and commits four small artifacts under
 in as they publish, conformal calibration, backtest summary). The Streamlit
 app is pure presentation on top of those files.
 
+Because the daily job retrains from scratch, the model weights are never
+stale — but two things it reads, rather than recomputes, can drift: the
+conformal calibration widths and the published accuracy metrics, both from a
+walk-forward backtest. A second cron (`monthly_recalibration.yml`, 1st of the
+month) recomputes them on the latest data behind a **release gate**
+(`gr_epf.governance`): the refreshed *challenger* artifacts replace the live
+*champion* ones only if a fresh backtest still beats the naive baseline by a
+clear margin, stays within an absolute MAE ceiling, and does not regress
+sharply against the last accepted run. A failed gate keeps the last-good
+artifacts and fails the run — alerting a human instead of silently shipping a
+calibration built on a bad month of data. Every accepted run is appended to
+`forecasts/model_health.json` as an audit trail.
+
 ## Limitations
 
 - No wind/solar day-ahead forecasts as features (published after gate
@@ -162,6 +175,7 @@ python scripts/train_model.py     # quick 90-day holdout check
 python scripts/backtest.py        # definitive 12-month walk-forward
 python scripts/conformal_report.py
 python scripts/make_forecast.py   # tomorrow's forecast -> forecasts/
+python scripts/monthly_revalidation.py --dry-run  # release-gate check, writes nothing
 streamlit run app/streamlit_app.py
 
 pytest && ruff check .
@@ -176,7 +190,7 @@ app/               Streamlit app (reads forecasts/ only)
 forecasts/         committed artifacts the app and the daily job share
 notebooks/         EDA only, nothing imported from here
 tests/             pytest, incl. no-leakage and DST/resolution tests
-.github/workflows/ daily forecast cron
+.github/workflows/ daily forecast cron + monthly recalibration gate + HF sync
 data/              local parquet cache (gitignored)
 ```
 
@@ -329,6 +343,21 @@ deployment να ακολουθούν την ονομαστική κάλυψη.
 backtest). Η εφαρμογή Streamlit είναι καθαρή παρουσίαση πάνω σε αυτά τα
 αρχεία.
 
+Επειδή το ημερήσιο job επανεκπαιδεύει από την αρχή, τα «βάρη» του μοντέλου
+δεν μπαγιατεύουν ποτέ — δύο όμως πράγματα που απλώς *διαβάζει* (αντί να τα
+ξαναϋπολογίζει) μπορούν να ξεφύγουν: οι ζώνες βαθμονόμησης conformal και οι
+δημοσιευμένες μετρικές ακρίβειας, και τα δύο από ένα walk-forward backtest.
+Ένα δεύτερο cron (`monthly_recalibration.yml`, την 1η κάθε μήνα) τα
+ξαναϋπολογίζει στα πιο πρόσφατα δεδομένα πίσω από μια **πύλη έκδοσης**
+(`gr_epf.governance`): τα ανανεωμένα *challenger* αρχεία αντικαθιστούν τα
+ζωντανά *champion* μόνο αν ένα φρέσκο backtest εξακολουθεί να νικά το naive
+baseline με σαφές περιθώριο, μένει κάτω από ένα απόλυτο όριο MAE, και δεν
+οπισθοχωρεί απότομα σε σχέση με την τελευταία αποδεκτή εκτέλεση. Μια
+αποτυχία στην πύλη κρατά τα τελευταία καλά αρχεία και ρίχνει την εκτέλεση —
+ειδοποιώντας άνθρωπο αντί να προωθήσει σιωπηλά βαθμονόμηση φτιαγμένη πάνω σε
+έναν κακό μήνα δεδομένων. Κάθε αποδεκτή εκτέλεση προστίθεται στο
+`forecasts/model_health.json` ως ιστορικό ελέγχου.
+
 ## Περιορισμοί
 
 - Δεν χρησιμοποιούνται day-ahead προβλέψεις αιολικής/ηλιακής παραγωγής ως
@@ -355,6 +384,7 @@ python scripts/train_model.py     # γρήγορος έλεγχος σε holdout
 python scripts/backtest.py        # το οριστικό 12μηνο walk-forward
 python scripts/conformal_report.py
 python scripts/make_forecast.py   # αυριανή πρόβλεψη -> forecasts/
+python scripts/monthly_revalidation.py --dry-run  # έλεγχος πύλης, δεν γράφει τίποτα
 streamlit run app/streamlit_app.py
 
 pytest && ruff check .
@@ -369,6 +399,6 @@ app/               εφαρμογή Streamlit (διαβάζει μόνο το fo
 forecasts/         τα committed αρχεία που μοιράζονται app και ημερήσιο job
 notebooks/         μόνο EDA, τίποτα δεν γίνεται import από εδώ
 tests/             pytest, μαζί με tests μη-διαρροής και αλλαγής ώρας/ανάλυσης
-.github/workflows/ ημερήσιο cron πρόβλεψης + συγχρονισμός HF Space
+.github/workflows/ ημερήσιο cron + μηνιαία πύλη επαναβαθμονόμησης + HF sync
 data/              τοπικό parquet cache (εκτός git)
 ```

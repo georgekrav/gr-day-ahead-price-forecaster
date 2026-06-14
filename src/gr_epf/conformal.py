@@ -147,6 +147,57 @@ def adaptive_alpha(
     return float(min(max(alpha, 0.0), 1.0))
 
 
+def coverage_summary(
+    forecast: pd.Series,
+    actual: pd.Series,
+    warmup_months: int = 3,
+    calibration_window_days: int | None = 90,
+    recalibrate_days: int = 1,
+) -> dict:
+    """Walk-forward empirical coverage of the conformal intervals.
+
+    Replays calibration over the backtest exactly as it runs live: intervals
+    for each step use only residuals strictly before it, optionally restricted
+    to the last calibration_window_days. Returns the static and adaptive (ACI)
+    coverage and mean width per level -- the dict written to the "conformal"
+    section of forecasts/backtest_summary.json. Shared by the manual report
+    (scripts/conformal_report.py) and the monthly recalibration job.
+    """
+    window = (
+        pd.Timedelta(days=calibration_window_days) if calibration_window_days else None
+    )
+    folds = []
+    cur = forecast.index.min() + pd.DateOffset(months=warmup_months)
+    end = forecast.index.max()
+    step = pd.Timedelta(days=recalibrate_days)
+    while cur <= end:
+        nxt = cur + step
+        past = forecast.index < cur
+        if window is not None:
+            past &= forecast.index >= cur - window
+        quantiles = hourly_quantiles(forecast[past], actual[past])
+        fold = forecast[(forecast.index >= cur) & (forecast.index < nxt)]
+        folds.append(apply_intervals(fold, quantiles))
+        cur = nxt
+    intervals = pd.concat(folds)
+    y = actual[intervals.index]
+    summary: dict = {}
+    for level in (80, 95):
+        cov = coverage(y, intervals[f"lo_{level}"], intervals[f"hi_{level}"])
+        width = (intervals[f"hi_{level}"] - intervals[f"lo_{level}"]).mean()
+        summary[str(level)] = {"coverage": round(cov, 3), "mean_width": round(float(width), 1)}
+    summary["calibration_window_days"] = calibration_window_days
+    for level in LEVELS:
+        iv = adaptive_conformal(forecast, actual, level=level)
+        scored = iv.dropna()
+        cov = coverage(actual[scored.index], scored["lo"], scored["hi"])
+        width = (scored["hi"] - scored["lo"]).mean()
+        summary[f"{round(level * 100)}_adaptive"] = {
+            "coverage": round(cov, 3), "mean_width": round(float(width), 1)
+        }
+    return summary
+
+
 def adaptive_hourly_quantiles(
     forecast: pd.Series,
     actual: pd.Series,
