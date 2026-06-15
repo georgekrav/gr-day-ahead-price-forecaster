@@ -58,6 +58,12 @@ STRINGS = {
     "band_80": {"en": "80% interval", "el": "ζώνη 80%"},
     "band_95": {"en": "95% interval", "el": "ζώνη 95%"},
     "track_record": {"en": "Track record", "el": "Ιστορικό επιδόσεων"},
+    "overview_caption": {
+        "en": "Overview — the last 14 days at a glance: how each forecast lined"
+        " up with the actual price over time. Pick a single day below to zoom in.",
+        "el": "Επισκόπηση — οι τελευταίες 14 ημέρες με μια ματιά: πώς ταίριαξε"
+        " κάθε πρόβλεψη με την πραγματική τιμή. Διάλεξε μία μέρα πιο κάτω για zoom.",
+    },
     "live_mae": {"en": "Live MAE (14d)", "el": "Ζωντανό MAE (14 ημ.)"},
     "hours_scored": {"en": "Hours scored", "el": "Ώρες με αποτέλεσμα"},
     "inside_80": {"en": "Inside 80% band", "el": "Εντός ζώνης 80%"},
@@ -316,28 +322,6 @@ def load_history() -> pd.DataFrame | None:
     return pd.read_parquet(path) if path.exists() else None
 
 
-def metric_card(label: str, value: str, sub: str = "", help_text: str = "",
-                color: str | None = None) -> str:
-    """A metric block matching st.metric, but with a colorable value and a
-    hover tooltip (st.metric cannot color the value)."""
-    val_style = f"color:{color};" if color else ""
-    tip = ""
-    if help_text:
-        safe = help_text.replace('"', "'")
-        tip = (
-            f'<span title="{safe}" style="cursor:help;color:#808495;'
-            'font-size:0.8rem"> &#9432;</span>'
-        )
-    return (
-        '<div style="padding:0.1rem 0">'
-        f'<div style="font-size:0.85rem;color:#a3a8b4">{label}{tip}</div>'
-        f'<div style="font-size:1.7rem;font-weight:600;line-height:1.25;'
-        f'{val_style}">{value}</div>'
-        f'<div style="font-size:0.8rem;color:#808495">{sub}</div>'
-        "</div>"
-    )
-
-
 def _price_hover(name: str) -> str:
     return "%{x|%H:%M} — %{y:.1f} €/MWh<extra>" + name + "</extra>"
 
@@ -423,6 +407,20 @@ st.set_page_config(page_title="GR Day-Ahead Price Forecast", layout="wide")
 # content height crosses the viewport, resizing the full-width charts in a
 # loop — the "flicker" seen on the Space.
 st.markdown("<style>html { overflow-y: scroll; }</style>", unsafe_allow_html=True)
+# Color the peak value red and the trough value green. st.metric cannot color
+# its value, so an invisible marker is placed in each column and :has() reaches
+# the metric value inside it (keeps the native "?" help tooltip intact).
+st.markdown(
+    "<style>"
+    '[data-testid="stColumn"]:has(.gr-peak) [data-testid="stMetricValue"],'
+    '[data-testid="column"]:has(.gr-peak) [data-testid="stMetricValue"]'
+    "{color:" + PEAK_COLOR + " !important;}"
+    '[data-testid="stColumn"]:has(.gr-trough) [data-testid="stMetricValue"],'
+    '[data-testid="column"]:has(.gr-trough) [data-testid="stMetricValue"]'
+    "{color:" + TROUGH_COLOR + " !important;}"
+    "</style>",
+    unsafe_allow_html=True,
+)
 
 head_left, head_right = st.columns([5, 1])
 with head_right:
@@ -458,28 +456,23 @@ st.subheader(
 peak = rows.loc[rows["forecast"].idxmax()]
 trough = rows.loc[rows["forecast"].idxmin()]
 c1, c2, c3, c4 = st.columns(4)
-c1.markdown(
-    metric_card(t("daily_mean"), f"{rows['forecast'].mean():.1f} €/MWh",
-                help_text=t("help_daily_mean")),
-    unsafe_allow_html=True,
+c1.metric(
+    t("daily_mean"), f"{rows['forecast'].mean():.1f} €/MWh", help=t("help_daily_mean")
 )
-c2.markdown(
-    metric_card(t("peak"), f"{peak['forecast']:.1f} €/MWh",
-                f"{t('at')} {peak['time_local']:%H:%M}", t("help_peak"),
-                color=PEAK_COLOR),
-    unsafe_allow_html=True,
+c2.markdown('<span class="gr-peak"></span>', unsafe_allow_html=True)
+c2.metric(
+    t("peak"), f"{peak['forecast']:.1f} €/MWh",
+    f"{t('at')} {peak['time_local']:%H:%M}", delta_color="off", help=t("help_peak"),
 )
-c3.markdown(
-    metric_card(t("trough"), f"{trough['forecast']:.1f} €/MWh",
-                f"{t('at')} {trough['time_local']:%H:%M}", t("help_trough"),
-                color=TROUGH_COLOR),
-    unsafe_allow_html=True,
+c3.markdown('<span class="gr-trough"></span>', unsafe_allow_html=True)
+c3.metric(
+    t("trough"), f"{trough['forecast']:.1f} €/MWh",
+    f"{t('at')} {trough['time_local']:%H:%M}", delta_color="off", help=t("help_trough"),
 )
-c4.markdown(
-    metric_card(t("generated"),
-                f"{pd.Timestamp(latest['generated_at_utc']):%d/%m/%Y %H:%M} UTC",
-                help_text=t("help_generated")),
-    unsafe_allow_html=True,
+c4.metric(
+    t("generated"),
+    f"{pd.Timestamp(latest['generated_at_utc']):%d/%m/%Y %H:%M} UTC",
+    help=t("help_generated"),
 )
 st.plotly_chart(band_figure(rows, t), width="stretch")
 
@@ -497,6 +490,7 @@ if history is not None:
         m1.metric(t("live_mae"), f"{live_mae:.1f} €/MWh", help=t("help_live_mae"))
         m2.metric(t("hours_scored"), f"{len(recent)}", help=t("help_hours_scored"))
         m3.metric(t("inside_80"), f"{inside_80:.0%}", help=t("help_inside_80"))
+        st.caption(t("overview_caption"))
         st.plotly_chart(track_record_figure(recent, t), width="stretch")
 
         local = scored.copy()
