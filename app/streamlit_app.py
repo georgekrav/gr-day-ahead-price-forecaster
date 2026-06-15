@@ -173,11 +173,11 @@ STRINGS = {
         " μπορεί να βγει και αρνητική.",
     },
     "help_generated": {
-        "en": "When the daily job produced this forecast. It runs on GitHub's"
-        " servers every morning before the market gate closure.",
-        "el": "Πότε παρήχθη αυτή η πρόβλεψη από το καθημερινό αυτόματο τρέξιμο."
-        " Εκτελείται σε servers του GitHub κάθε πρωί, πριν από το κλείσιμο της"
-        " αγοράς.",
+        "en": "When the daily job produced this forecast (Greek time). It runs"
+        " on GitHub's servers every morning before the market gate closure.",
+        "el": "Πότε παρήχθη αυτή η πρόβλεψη από το καθημερινό αυτόματο τρέξιμο"
+        " (ώρα Ελλάδας). Εκτελείται σε servers του GitHub κάθε πρωί, πριν από το"
+        " κλείσιμο της αγοράς.",
     },
     "help_track_record": {
         "en": "Past forecasts frozen at issue time, compared against the actual"
@@ -406,7 +406,13 @@ st.set_page_config(page_title="GR Day-Ahead Price Forecast", layout="wide")
 # Force the vertical scrollbar to always show: otherwise it appears/hides as
 # content height crosses the viewport, resizing the full-width charts in a
 # loop — the "flicker" seen on the Space.
-st.markdown("<style>html { overflow-y: scroll; }</style>", unsafe_allow_html=True)
+st.markdown(
+    "<style>html { overflow-y: scroll; }"
+    # hide the anchor-link (chain) icon Streamlit adds next to every heading
+    '[data-testid="stHeaderActionElements"] a { display: none; }'
+    "</style>",
+    unsafe_allow_html=True,
+)
 # Color the peak value red and the trough value green. st.metric cannot color
 # its value, so an invisible marker is placed in each column and :has() reaches
 # the metric value inside it (keeps the native "?" help tooltip intact).
@@ -455,6 +461,10 @@ st.subheader(
 )
 peak = rows.loc[rows["forecast"].idxmax()]
 trough = rows.loc[rows["forecast"].idxmin()]
+generated = pd.Timestamp(latest["generated_at_utc"])
+if generated.tzinfo is None:
+    generated = generated.tz_localize("UTC")
+generated = generated.tz_convert("Europe/Athens")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric(
     t("daily_mean"), f"{rows['forecast'].mean():.1f} €/MWh", help=t("help_daily_mean")
@@ -471,7 +481,7 @@ c3.metric(
 )
 c4.metric(
     t("generated"),
-    f"{pd.Timestamp(latest['generated_at_utc']):%d/%m/%Y %H:%M} UTC",
+    f"{generated:%d/%m/%Y %H:%M}",
     help=t("help_generated"),
 )
 st.plotly_chart(band_figure(rows, t), width="stretch")
