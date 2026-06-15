@@ -18,6 +18,8 @@ BAND_95 = "rgba(31, 119, 180, 0.15)"
 BAND_80 = "rgba(31, 119, 180, 0.30)"
 LINE = "#1f77b4"
 ACTUAL = "#d62728"
+PEAK_COLOR = "#ff4b4b"
+TROUGH_COLOR = "#21c55d"
 
 STRINGS = {
     "title": {
@@ -25,10 +27,20 @@ STRINGS = {
         "el": "Πρόβλεψη Τιμής Ρεύματος Επόμενης Ημέρας — Ελλάδα",
     },
     "caption": {
-        "en": "Bidding zone GR (10YGR-HTSO-----Y). ENTSO-E data, LightGBM,"
-        " split-conformal intervals. Educational project — not trading advice.",
-        "el": "Ζώνη προσφορών GR (10YGR-HTSO-----Y). Δεδομένα ENTSO-E, LightGBM,"
-        " conformal διαστήματα. Εκπαιδευτικό project — όχι συμβουλή συναλλαγών.",
+        "en": "This app forecasts tomorrow's 24 hourly wholesale electricity"
+        " prices for Greece (bidding zone 10YGR-HTSO-----Y). Every morning,"
+        " before the day-ahead auction closes at noon, a machine-learning model"
+        " (LightGBM) trained on three years of ENTSO-E data predicts each hour's"
+        " price together with how uncertain that prediction is, and tracks how"
+        " well past forecasts turned out. Educational project — not trading"
+        " advice.",
+        "el": "Η εφαρμογή προβλέπει τις 24 ωριαίες χονδρεμπορικές τιμές ρεύματος"
+        " της αυριανής μέρας για την Ελλάδα (ζώνη 10YGR-HTSO-----Y). Κάθε πρωί,"
+        " πριν κλείσει το μεσημέρι η δημοπρασία της επόμενης ημέρας, ένα μοντέλο"
+        " μηχανικής μάθησης (LightGBM) εκπαιδευμένο σε τρία χρόνια δεδομένων"
+        " ENTSO-E προβλέπει την τιμή κάθε ώρας μαζί με το πόσο αβέβαιη είναι, και"
+        " παρακολουθεί πόσο καλά βγήκαν οι παλιές προβλέψεις. Εκπαιδευτικό project"
+        " — όχι συμβουλή συναλλαγών.",
     },
     "no_forecast": {
         "en": "No forecast generated yet. Run scripts/make_forecast.py first.",
@@ -49,20 +61,56 @@ STRINGS = {
     "live_mae": {"en": "Live MAE (14d)", "el": "Ζωντανό MAE (14 ημ.)"},
     "hours_scored": {"en": "Hours scored", "el": "Ώρες με αποτέλεσμα"},
     "inside_80": {"en": "Inside 80% band", "el": "Εντός ζώνης 80%"},
+    "select_day": {
+        "en": "Compare a specific day (forecast vs. what actually happened)",
+        "el": "Σύγκριση συγκεκριμένης ημέρας (πρόβλεψη vs. τι έγινε τελικά)",
+    },
+    "day_mae": {"en": "MAE that day", "el": "MAE εκείνης της ημέρας"},
+    "day_rmse": {"en": "RMSE that day", "el": "RMSE εκείνης της ημέρας"},
+    "day_inside_95": {"en": "Inside 95% band", "el": "Εντός ζώνης 95%"},
     "backtest_title": {
         "en": "Backtest (12 months walk-forward, monthly retrain)",
         "el": "Backtest (12 μήνες walk-forward, μηνιαία επανεκπαίδευση)",
     },
-    "conformal_caption": {
-        "en": "Conformal intervals, daily recalibration on the last {days} days of"
-        " residuals — empirical coverage {c80:.1%} (80% nominal) and {c95:.1%}"
-        " (95% nominal) on the backtest.",
-        "el": "Conformal διαστήματα με ημερήσια επαναβαθμονόμηση στα σφάλματα των"
-        " τελευταίων {days} ημερών — εμπειρική κάλυψη {c80:.1%} (στόχος 80%) και"
-        " {c95:.1%} (στόχος 95%) στο backtest.",
+    "backtest_caption": {
+        "en": "Each row is a forecasting method, scored over the last 12 months on"
+        " data it never saw while training. Lower MAE and RMSE is better (they are"
+        " the average miss in EUR/MWh). The two “naive” rows are simple"
+        " rules of thumb — same hour yesterday, or same hour last week — and the"
+        " model is worth using only if it clearly beats them, which it does.",
+        "el": "Κάθε γραμμή είναι μια μέθοδος πρόβλεψης, βαθμολογημένη στους"
+        " τελευταίους 12 μήνες σε δεδομένα που δεν είδε ποτέ στην εκπαίδευση. Όσο"
+        " χαμηλότερα τα MAE και RMSE, τόσο καλύτερα (είναι το μέσο σφάλμα σε"
+        " EUR/MWh). Οι δύο “naive” γραμμές είναι απλοί εμπειρικοί κανόνες"
+        " — ίδια ώρα χθες ή ίδια ώρα πριν μία εβδομάδα — και το μοντέλο αξίζει μόνο"
+        " αν τις ξεπερνά καθαρά, κάτι που κάνει.",
     },
     "how_title": {"en": "How it works", "el": "Πώς λειτουργεί"},
     "shap_title": {"en": "How the model decides", "el": "Πώς αποφασίζει το μοντέλο"},
+    "shap_features_title": {
+        "en": "What each feature means",
+        "el": "Τι σημαίνει κάθε χαρακτηριστικό",
+    },
+    "shap_features": {
+        "en": "- **price_lag_24/48/168h** — the price 1, 2 or 7 days ago at the"
+        " same hour (the past is the strongest clue to the future).\n"
+        "- **res_fc_solar_mw / res_fc_wind_mw** — the grid operator's own"
+        " day-ahead forecast of tomorrow's solar / wind output, in MW.\n"
+        "- **load_forecast_mw** — the day-ahead forecast of electricity demand.\n"
+        "- **gen_*_lag_48h** — actual generation by source (solar, wind, gas,"
+        " hydro) two days ago.\n"
+        "- **wx_\\*** — weather: solar radiation, wind, temperature, cloud.\n"
+        "- **hour / weekday / month / is_holiday** — position in the calendar.",
+        "el": "- **price_lag_24/48/168h** — η τιμή 1, 2 ή 7 μέρες πριν, την ίδια"
+        " ώρα (το παρελθόν είναι η ισχυρότερη ένδειξη για το μέλλον).\n"
+        "- **res_fc_solar_mw / res_fc_wind_mw** — η πρόβλεψη του διαχειριστή για"
+        " την αυριανή ηλιακή / αιολική παραγωγή, σε MW.\n"
+        "- **load_forecast_mw** — η πρόβλεψη ζήτησης ρεύματος για αύριο.\n"
+        "- **gen_*_lag_48h** — πραγματική παραγωγή ανά πηγή (ήλιος, άνεμος, αέριο,"
+        " νερό) πριν δύο μέρες.\n"
+        "- **wx_\\*** — καιρός: ηλιακή ακτινοβολία, άνεμος, θερμοκρασία, νέφωση.\n"
+        "- **hour / weekday / month / is_holiday** — θέση στο ημερολόγιο.",
+    },
     "help_shap": {
         "en": "SHAP attributes each prediction to its features. The bars show"
         " the average impact (in EUR/MWh) of each feature on the forecast —"
@@ -91,11 +139,12 @@ STRINGS = {
         "en": "The blue line is the model's forecast for each hour of the target"
         " day. The shaded bands are conformal uncertainty intervals: the true"
         " price should fall inside the dark band 80% of the time and inside the"
-        " light band 95% of the time.",
+        " light band 95% of the time. Hover over the line to read each value.",
         "el": "Η μπλε γραμμή είναι η πρόβλεψη του μοντέλου για κάθε ώρα της"
         " ημέρας-στόχου. Οι σκιασμένες ζώνες είναι διαστήματα αβεβαιότητας"
         " (conformal): η πραγματική τιμή αναμένεται μέσα στη σκούρα ζώνη το 80%"
-        " των ωρών και μέσα στην ανοιχτόχρωμη το 95%.",
+        " των ωρών και μέσα στην ανοιχτόχρωμη το 95%. Πέρνα τον κέρσορα πάνω στη"
+        " γραμμή για να δεις κάθε τιμή.",
     },
     "help_daily_mean": {
         "en": "Average of the 24 hourly forecasts — a quick sense of how cheap"
@@ -135,10 +184,10 @@ STRINGS = {
     "help_live_mae": {
         "en": "Mean Absolute Error over the scored hours of the last 14 days:"
         " by how many EUR/MWh the forecast missed on average. The 12-month"
-        " backtest average is 19.27.",
+        " backtest average is 16.85.",
         "el": "Μέσο απόλυτο σφάλμα στις βαθμολογημένες ώρες των τελευταίων 14"
         " ημερών: πόσα EUR/MWh έπεσε έξω η πρόβλεψη κατά μέσο όρο. Ο μέσος όρος"
-        " του 12μηνου backtest είναι 19,27.",
+        " του 12μηνου backtest είναι 16,85.",
     },
     "help_hours_scored": {
         "en": "How many forecast hours have a published actual price to compare"
@@ -155,64 +204,100 @@ STRINGS = {
         " στο 80%.",
     },
     "help_backtest": {
-        "en": "Walk-forward evaluation over the final 12 months: each month was"
-        " predicted by a model trained only on data before it, retrained"
-        " monthly — exactly how the system runs live. Lower is better; the"
-        " naive rows are the bar the model must beat.",
-        "el": "Αξιολόγηση walk-forward στους τελευταίους 12 μήνες: κάθε μήνας"
-        " προβλέφθηκε από μοντέλο εκπαιδευμένο μόνο σε δεδομένα πριν από αυτόν,"
-        " με μηνιαία επανεκπαίδευση — ακριβώς όπως λειτουργεί ζωντανά. Όσο"
-        " χαμηλότερα τόσο καλύτερα· οι «naive» γραμμές είναι ο πήχης που πρέπει"
-        " να ξεπερνά το μοντέλο.",
+        "en": "Each forecast was made by a model trained only on the past, then"
+        " checked against what actually happened — repeated month by month, just"
+        " like the live system. MAE is the average miss in EUR/MWh; lower is"
+        " better.",
+        "el": "Κάθε πρόβλεψη έγινε από μοντέλο εκπαιδευμένο μόνο στο παρελθόν και"
+        " μετά συγκρίθηκε με το τι έγινε στην πραγματικότητα — επαναλαμβανόμενα"
+        " κάθε μήνα, ακριβώς όπως το ζωντανό σύστημα. Το MAE είναι το μέσο σφάλμα"
+        " σε EUR/MWh· όσο χαμηλότερα τόσο καλύτερα.",
     },
 }
 
 HOW_EN = """
+**The problem.** Greek wholesale electricity prices for every hour of a day
+are set the day before, in a single auction that closes at 12:00 CET. The
+task is to predict all 24 of tomorrow's hourly prices using only information
+that already exists before that deadline. It is a genuinely hard problem:
+prices are spiky, can turn negative at sunny midday, and the market keeps
+shifting as solar grows.
+
 **Data.** Three years of hourly observations for the Greek bidding zone from
 the ENTSO-E Transparency Platform: day-ahead prices, actual load, the
-day-ahead load forecast, and generation by type (solar, wind onshore,
-hydro, fossil gas). Everything is stored on a UTC index; 15-minute periods
-(after the SDAC switch of October 2025) are averaged to hourly.
+day-ahead load forecast, generation by type (solar, wind onshore, hydro,
+fossil gas), and the operator's day-ahead wind/solar forecast. Open-Meteo
+adds weather. Everything is stored on a UTC index so daylight-saving never
+creates a duplicate or missing hour; 15-minute periods (after the SDAC switch
+of October 2025) are averaged to hourly.
 
-**Model.** LightGBM with an l1 objective on 12 features: price lags
-(24/48/168 h), local calendar (hour, weekday, month, Greek holidays), the
-day-ahead load forecast, and 48-hour generation lags. Every feature is
-available before the market gate closure at 12:00 CET on D-1 — generation
-lags start at 48 h because actuals for the afternoon of D-1 are not yet
-published when the forecast is issued.
+**Model.** LightGBM (gradient-boosted trees) with an l1 objective, so price
+spikes do not dominate the fit. It reads price lags (24/48/168 h), the local
+calendar, the day-ahead load forecast, 48-hour generation lags, and the
+day-ahead RES (wind/solar) forecast — which turned out to be the single most
+useful feature, because more expected solar pushes the midday price down.
+Every input is available before the 12:00 CET gate closure: generation lags
+start at 48 h because yesterday afternoon's actuals are not published yet.
 
-**Evaluation.** Walk-forward over the final 12 months with monthly
-retraining: every shown metric comes from a model that had never seen the
-period it was scored on. Baselines: same hour yesterday (naive-24h) and
-same hour last week (seasonal-naive-168h).
+**Honest evaluation.** A 12-month walk-forward backtest with monthly
+retraining: every reported number comes from a model that had never seen the
+period it was scored on — the only fair way to estimate live accuracy. The
+model beats both naive baselines (same hour yesterday, same hour last week)
+by about 25% on MAE.
 
-**Uncertainty.** Split-conformal intervals calibrated per hour of day on
-the most recent 90 days of out-of-sample errors, recalibrated daily.
+**Uncertainty.** Split-conformal intervals, calibrated separately for each
+hour of the day on the most recent 90 days of out-of-sample errors and
+recalibrated every day, with an adaptive correction that keeps coverage on
+target as the market drifts.
+
+**Automation.** A GitHub Actions cron refreshes the data, retrains, and
+publishes a new forecast every morning before the auction; a second monthly
+job re-checks accuracy and refreshes the uncertainty bands only if the model
+still clearly beats the baseline. The app you are reading is pure
+presentation on top of those committed files.
 """
 
 HOW_EL = """
+**Το πρόβλημα.** Οι ελληνικές χονδρεμπορικές τιμές ρεύματος για κάθε ώρα μιας
+μέρας καθορίζονται την προηγούμενη, σε μία δημοπρασία που κλείνει στις 12:00
+CET. Ζητούμενο είναι να προβλέψουμε και τις 24 αυριανές ωριαίες τιμές
+χρησιμοποιώντας μόνο πληροφορία που υπάρχει ήδη πριν από αυτή την προθεσμία.
+Είναι πραγματικά δύσκολο: οι τιμές είναι αιχμηρές, μπορούν να γίνουν αρνητικές
+το ηλιόλουστο μεσημέρι, και η αγορά αλλάζει συνεχώς καθώς μεγαλώνουν τα ηλιακά.
+
 **Δεδομένα.** Τρία χρόνια ωριαίων παρατηρήσεων για την ελληνική ζώνη από την
 πλατφόρμα διαφάνειας ENTSO-E: τιμές επόμενης ημέρας, πραγματικό φορτίο,
-πρόβλεψη φορτίου επόμενης ημέρας και παραγωγή ανά τεχνολογία (ηλιακά,
-αιολικά, υδροηλεκτρικά, φυσικό αέριο). Όλα αποθηκεύονται σε ώρα UTC ώστε η
-αλλαγή ώρας να μην δημιουργεί ποτέ διπλές ή χαμένες ώρες· τα 15λεπτα (μετά
-την αλλαγή της αγοράς τον Οκτώβριο 2025) γίνονται ωριαία με μέσο όρο.
+πρόβλεψη φορτίου, παραγωγή ανά τεχνολογία (ηλιακά, αιολικά, υδροηλεκτρικά,
+φυσικό αέριο) και την πρόβλεψη ΑΠΕ του διαχειριστή. Ο καιρός έρχεται από το
+Open-Meteo. Όλα αποθηκεύονται σε ώρα UTC ώστε η αλλαγή ώρας να μη δημιουργεί
+ποτέ διπλές ή χαμένες ώρες· τα 15λεπτα (μετά την αλλαγή της αγοράς τον
+Οκτώβριο 2025) γίνονται ωριαία με μέσο όρο.
 
-**Μοντέλο.** LightGBM με στόχο l1 πάνω σε 12 χαρακτηριστικά: τιμές με
-υστέρηση 24/48/168 ωρών, ημερολόγιο (ώρα, ημέρα εβδομάδας, μήνας, ελληνικές
-αργίες), την πρόβλεψη φορτίου της επόμενης ημέρας και παραγωγή με υστέρηση
-48 ωρών. Κάθε χαρακτηριστικό είναι διαθέσιμο πριν από το κλείσιμο της αγοράς
-(12:00 CET της προηγούμενης μέρας) — η παραγωγή ξεκινά από 48 ώρες πίσω
-γιατί τα απογευματινά δεδομένα της χθεσινής μέρας δεν έχουν δημοσιευτεί
-ακόμη όταν εκδίδεται η πρόβλεψη.
+**Μοντέλο.** LightGBM (gradient-boosted δέντρα) με στόχο l1, ώστε οι ακραίες
+τιμές να μην κυριαρχούν. Διαβάζει τιμές με υστέρηση (24/48/168 ωρών), το
+ημερολόγιο, την πρόβλεψη φορτίου, παραγωγή με υστέρηση 48 ωρών, και την
+πρόβλεψη ΑΠΕ (αιολικά/ηλιακά) επόμενης ημέρας — που αποδείχθηκε το πιο χρήσιμο
+χαρακτηριστικό, αφού περισσότερη αναμενόμενη ηλιακή ρίχνει τη μεσημεριανή τιμή.
+Κάθε είσοδος είναι διαθέσιμη πριν το κλείσιμο στις 12:00 CET· η παραγωγή
+ξεκινά από 48 ώρες πίσω γιατί τα χθεσινά απογευματινά δεδομένα δεν έχουν
+δημοσιευτεί ακόμη.
 
-**Αξιολόγηση.** Walk-forward στους τελευταίους 12 μήνες με μηνιαία
-επανεκπαίδευση: κάθε μετρική προέρχεται από μοντέλο που δεν είχε δει ποτέ
-την περίοδο στην οποία βαθμολογήθηκε. Μέτρα σύγκρισης: ίδια ώρα χθες
-(naive-24h) και ίδια ώρα πριν από μία εβδομάδα (seasonal-naive-168h).
+**Τίμια αξιολόγηση.** 12μηνο walk-forward backtest με μηνιαία επανεκπαίδευση:
+κάθε νούμερο προέρχεται από μοντέλο που δεν είχε δει ποτέ την περίοδο στην
+οποία βαθμολογήθηκε — ο μόνος δίκαιος τρόπος να εκτιμηθεί η πραγματική
+ακρίβεια. Το μοντέλο νικά και τα δύο naive μέτρα σύγκρισης (ίδια ώρα χθες,
+ίδια ώρα πριν μία εβδομάδα) κατά περίπου 25% στο MAE.
 
-**Αβεβαιότητα.** Conformal διαστήματα βαθμονομημένα ανά ώρα της ημέρας στα
-σφάλματα των τελευταίων 90 ημερών, με ημερήσια επαναβαθμονόμηση.
+**Αβεβαιότητα.** Conformal διαστήματα, βαθμονομημένα ξεχωριστά για κάθε ώρα
+της ημέρας στα σφάλματα των τελευταίων 90 ημερών και επαναβαθμονομημένα κάθε
+μέρα, με προσαρμοστική διόρθωση που κρατά την κάλυψη στον στόχο καθώς αλλάζει
+η αγορά.
+
+**Αυτοματισμός.** Ένα cron του GitHub Actions ανανεώνει τα δεδομένα,
+επανεκπαιδεύει και δημοσιεύει νέα πρόβλεψη κάθε πρωί πριν τη δημοπρασία· ένα
+δεύτερο μηνιαίο job ξαναελέγχει την ακρίβεια και ανανεώνει τις ζώνες
+αβεβαιότητας μόνο αν το μοντέλο εξακολουθεί να νικά καθαρά το baseline. Η
+εφαρμογή που διαβάζεις είναι καθαρή παρουσίαση πάνω σε αυτά τα αρχεία.
 """
 
 SOURCE_LINK = (
@@ -231,32 +316,61 @@ def load_history() -> pd.DataFrame | None:
     return pd.read_parquet(path) if path.exists() else None
 
 
+def metric_card(label: str, value: str, sub: str = "", help_text: str = "",
+                color: str | None = None) -> str:
+    """A metric block matching st.metric, but with a colorable value and a
+    hover tooltip (st.metric cannot color the value)."""
+    val_style = f"color:{color};" if color else ""
+    tip = ""
+    if help_text:
+        safe = help_text.replace('"', "'")
+        tip = (
+            f'<span title="{safe}" style="cursor:help;color:#808495;'
+            'font-size:0.8rem"> &#9432;</span>'
+        )
+    return (
+        '<div style="padding:0.1rem 0">'
+        f'<div style="font-size:0.85rem;color:#a3a8b4">{label}{tip}</div>'
+        f'<div style="font-size:1.7rem;font-weight:600;line-height:1.25;'
+        f'{val_style}">{value}</div>'
+        f'<div style="font-size:0.8rem;color:#808495">{sub}</div>'
+        "</div>"
+    )
+
+
+def _price_hover(name: str) -> str:
+    return "%{x|%H:%M} — %{y:.1f} €/MWh<extra>" + name + "</extra>"
+
+
 def band_figure(rows: pd.DataFrame, t) -> go.Figure:
     x = rows["time_local"]
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=rows["hi_95"], line={"width": 0}, showlegend=False))
+    fig.add_trace(go.Scatter(x=x, y=rows["hi_95"], line={"width": 0},
+                             showlegend=False, hoverinfo="skip"))
     fig.add_trace(
         go.Scatter(
             x=x, y=rows["lo_95"], fill="tonexty", fillcolor=BAND_95,
-            line={"width": 0}, name=t("band_95"),
+            line={"width": 0}, name=t("band_95"), hoverinfo="skip",
         )
     )
-    fig.add_trace(go.Scatter(x=x, y=rows["hi_80"], line={"width": 0}, showlegend=False))
+    fig.add_trace(go.Scatter(x=x, y=rows["hi_80"], line={"width": 0},
+                             showlegend=False, hoverinfo="skip"))
     fig.add_trace(
         go.Scatter(
             x=x, y=rows["lo_80"], fill="tonexty", fillcolor=BAND_80,
-            line={"width": 0}, name=t("band_80"),
+            line={"width": 0}, name=t("band_80"), hoverinfo="skip",
         )
     )
     fig.add_trace(
         go.Scatter(
             x=x, y=rows["forecast"], line={"color": LINE, "width": 3},
-            name=t("forecast_line"),
+            name=t("forecast_line"), hovertemplate=_price_hover(t("forecast_line")),
         )
     )
     fig.update_layout(
         yaxis_title="EUR/MWh", xaxis_title=t("hour_axis"),
-        margin={"t": 30, "b": 40}, legend={"orientation": "h"}, height=420,
+        margin={"t": 30, "b": 70}, height=420, hovermode="x",
+        legend={"orientation": "h", "yanchor": "top", "y": -0.22},
     )
     return fig
 
@@ -265,14 +379,41 @@ def track_record_figure(recent: pd.DataFrame, t) -> go.Figure:
     x = recent.index.tz_convert("Europe/Athens")
     fig = go.Figure()
     fig.add_trace(
-        go.Scatter(x=x, y=recent["forecast"], name=t("forecast_line"), line={"color": LINE})
+        go.Scatter(x=x, y=recent["forecast"], name=t("forecast_line"),
+                   line={"color": LINE}, hovertemplate=_price_hover(t("forecast_line")))
     )
     fig.add_trace(
-        go.Scatter(x=x, y=recent["actual"], name=t("actual_line"), line={"color": ACTUAL})
+        go.Scatter(x=x, y=recent["actual"], name=t("actual_line"),
+                   line={"color": ACTUAL}, hovertemplate=_price_hover(t("actual_line")))
     )
     fig.update_layout(
         yaxis_title="EUR/MWh", margin={"t": 30, "b": 40},
-        legend={"orientation": "h"}, height=380,
+        legend={"orientation": "h"}, height=380, hovermode="x",
+    )
+    return fig
+
+
+def day_figure(day: pd.DataFrame, t) -> go.Figure:
+    x = day.index
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=x, y=day["hi_95"], line={"width": 0},
+                             showlegend=False, hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=x, y=day["lo_95"], fill="tonexty", fillcolor=BAND_95,
+                             line={"width": 0}, name=t("band_95"), hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=x, y=day["hi_80"], line={"width": 0},
+                             showlegend=False, hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=x, y=day["lo_80"], fill="tonexty", fillcolor=BAND_80,
+                             line={"width": 0}, name=t("band_80"), hoverinfo="skip"))
+    fig.add_trace(go.Scatter(x=x, y=day["forecast"], name=t("forecast_line"),
+                             line={"color": LINE, "width": 3},
+                             hovertemplate=_price_hover(t("forecast_line"))))
+    fig.add_trace(go.Scatter(x=x, y=day["actual"], name=t("actual_line"),
+                             line={"color": ACTUAL, "width": 2},
+                             hovertemplate=_price_hover(t("actual_line"))))
+    fig.update_layout(
+        yaxis_title="EUR/MWh", xaxis_title=t("hour_axis"),
+        margin={"t": 30, "b": 70}, height=380, hovermode="x",
+        legend={"orientation": "h", "yanchor": "top", "y": -0.22},
     )
     return fig
 
@@ -317,23 +458,30 @@ st.subheader(
 peak = rows.loc[rows["forecast"].idxmax()]
 trough = rows.loc[rows["forecast"].idxmin()]
 c1, c2, c3, c4 = st.columns(4)
-c1.metric(
-    t("daily_mean"), f"{rows['forecast'].mean():.1f} €/MWh", help=t("help_daily_mean")
+c1.markdown(
+    metric_card(t("daily_mean"), f"{rows['forecast'].mean():.1f} €/MWh",
+                help_text=t("help_daily_mean")),
+    unsafe_allow_html=True,
 )
-c2.metric(
-    t("peak"), f"{peak['forecast']:.1f} €/MWh",
-    f"{t('at')} {peak['time_local']:%H:%M}", help=t("help_peak"),
+c2.markdown(
+    metric_card(t("peak"), f"{peak['forecast']:.1f} €/MWh",
+                f"{t('at')} {peak['time_local']:%H:%M}", t("help_peak"),
+                color=PEAK_COLOR),
+    unsafe_allow_html=True,
 )
-c3.metric(
-    t("trough"), f"{trough['forecast']:.1f} €/MWh",
-    f"{t('at')} {trough['time_local']:%H:%M}", help=t("help_trough"),
+c3.markdown(
+    metric_card(t("trough"), f"{trough['forecast']:.1f} €/MWh",
+                f"{t('at')} {trough['time_local']:%H:%M}", t("help_trough"),
+                color=TROUGH_COLOR),
+    unsafe_allow_html=True,
 )
-c4.metric(
-    t("generated"),
-    f"{pd.Timestamp(latest['generated_at_utc']):%d/%m/%Y %H:%M} UTC",
-    help=t("help_generated"),
+c4.markdown(
+    metric_card(t("generated"),
+                f"{pd.Timestamp(latest['generated_at_utc']):%d/%m/%Y %H:%M} UTC",
+                help_text=t("help_generated")),
+    unsafe_allow_html=True,
 )
-st.plotly_chart(band_figure(rows, t), use_container_width=True)
+st.plotly_chart(band_figure(rows, t), width="stretch")
 
 history = load_history()
 if history is not None:
@@ -345,35 +493,47 @@ if history is not None:
         inside_80 = (
             (recent["actual"] >= recent["lo_80"]) & (recent["actual"] <= recent["hi_80"])
         ).mean()
-        c1, c2, c3 = st.columns(3)
-        c1.metric(t("live_mae"), f"{live_mae:.1f} €/MWh", help=t("help_live_mae"))
-        c2.metric(t("hours_scored"), f"{len(recent)}", help=t("help_hours_scored"))
-        c3.metric(t("inside_80"), f"{inside_80:.0%}", help=t("help_inside_80"))
-        st.plotly_chart(track_record_figure(recent, t), use_container_width=True)
+        m1, m2, m3 = st.columns(3)
+        m1.metric(t("live_mae"), f"{live_mae:.1f} €/MWh", help=t("help_live_mae"))
+        m2.metric(t("hours_scored"), f"{len(recent)}", help=t("help_hours_scored"))
+        m3.metric(t("inside_80"), f"{inside_80:.0%}", help=t("help_inside_80"))
+        st.plotly_chart(track_record_figure(recent, t), width="stretch")
+
+        local = scored.copy()
+        local.index = local.index.tz_convert("Europe/Athens")
+        days = sorted({ts.date() for ts in local.index})
+        labels = [d.strftime("%d/%m/%Y") for d in days]
+        picked = st.selectbox(t("select_day"), labels, index=len(labels) - 1)
+        day = local[local.index.date == days[labels.index(picked)]]
+        err = day["actual"] - day["forecast"]
+        d_mae = err.abs().mean()
+        d_rmse = (err**2).mean() ** 0.5
+        d_in95 = (
+            (day["actual"] >= day["lo_95"]) & (day["actual"] <= day["hi_95"])
+        ).mean()
+        d1, d2, d3 = st.columns(3)
+        d1.metric(t("day_mae"), f"{d_mae:.1f} €/MWh")
+        d2.metric(t("day_rmse"), f"{d_rmse:.1f} €/MWh")
+        d3.metric(t("day_inside_95"), f"{d_in95:.0%}")
+        st.plotly_chart(day_figure(day, t), width="stretch")
 
 summary = load_json("backtest_summary.json")
 if summary and "metrics" in summary:
     st.subheader(t("backtest_title"), help=t("help_backtest"))
+    st.caption(t("backtest_caption"))
     table = pd.DataFrame(summary["metrics"]["table"]).T
-    st.dataframe(table, use_container_width=True)
-    if "conformal" in summary:
-        conf = summary["conformal"]
-        st.caption(
-            t("conformal_caption").format(
-                days=conf["calibration_window_days"],
-                c80=conf["80"]["coverage"],
-                c95=conf["95"]["coverage"],
-            )
-        )
+    st.dataframe(table, width="stretch")
 
 shap_bar = ROOT / "assets" / "shap_bar.png"
 if shap_bar.exists():
     st.subheader(t("shap_title"), help=t("help_shap"))
-    # fixed width in a centred column: a full-width stretch of this PNG made
-    # the page reflow/flicker on the Space
-    left, mid, right = st.columns([1, 2, 1])
-    mid.image(str(shap_bar), width=640)
-    mid.caption(t("shap_caption"))
+    # fixed-width image beside a feature glossary: a full-width stretch of this
+    # PNG made the page reflow/flicker on the Space
+    img_col, gloss_col = st.columns([3, 2])
+    img_col.image(str(shap_bar), width=560)
+    img_col.caption(t("shap_caption"))
+    gloss_col.markdown(f"**{t('shap_features_title')}**")
+    gloss_col.markdown(t("shap_features"))
 
 with st.expander(t("how_title")):
     first, second = (HOW_EL, HOW_EN) if code == "el" else (HOW_EN, HOW_EL)
