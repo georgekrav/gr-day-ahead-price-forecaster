@@ -10,16 +10,27 @@
       "baseline_mae": null,
       "status": "accepted",
       "reasons": []
+    },
+    {
+      "evaluated_at": "2026-06-18T02:37:37.274128+03:00",
+      "window_start": "2025-06-18 21:00:00+00:00",
+      "window_end": "2026-06-18 20:00:00+00:00",
+      "mae": 16.49,
+      "rmse": 24.38,
+      "naive_mae": 22.86,
+      "baseline_mae": 17.1,
+      "status": "accepted",
+      "reasons": []
     }
   ],
   "latest": {
-    "evaluated_at": "2026-06-14T17:47:34.357014+03:00",
-    "window_start": "2025-06-15 21:00:00+00:00",
-    "window_end": "2026-06-15 20:00:00+00:00",
-    "mae": 17.1,
-    "rmse": 24.96,
-    "naive_mae": 22.75,
-    "baseline_mae": null,
+    "evaluated_at": "2026-06-18T02:37:37.274128+03:00",
+    "window_start": "2025-06-18 21:00:00+00:00",
+    "window_end": "2026-06-18 20:00:00+00:00",
+    "mae": 16.49,
+    "rmse": 24.38,
+    "naive_mae": 22.86,
+    "baseline_mae": 17.1,
     "status": "accepted",
     "reasons": []
   }
