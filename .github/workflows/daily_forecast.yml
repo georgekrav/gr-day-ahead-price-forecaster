@@ -1,13 +1,18 @@
 # Daily forecast for day D+1, issued before the SDAC gate closure
-# (12:00 CET/CEST). Two triggers cover DST: 08:30 UTC is 10:30 CEST in
-# summer; 09:30 UTC is 10:30 CET in winter. Runs are idempotent — the
-# newest forecast for a day wins — so the duplicate run is harmless.
+# (12:00 CET/CEST). GitHub's scheduled runners are best-effort and in
+# practice fire several hours late, so the cron is set deliberately early to
+# pre-compensate: with the typical ~4 h delay these land ~08:00-09:00 UTC,
+# just after the day-ahead load/RES forecasts publish (~10:00 local) and
+# well before gate closure. Two times keep one run in the right window across
+# DST. Runs are idempotent (newest forecast for a day wins); make_forecast
+# routes any missing same-day input through LightGBM's NaN handling if a run
+# happens to land very early.
 name: Daily forecast
 
 on:
   schedule:
-    - cron: "30 8 * * *"
-    - cron: "30 9 * * *"
+    - cron: "0 4 * * *"
+    - cron: "0 5 * * *"
   workflow_dispatch:
 
 permissions:
