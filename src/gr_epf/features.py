@@ -25,6 +25,12 @@ Availability per feature:
   tomorrow's solar and wind output. See gr_epf.weather for the
   archive-as-proxy / live-forecast leakage handling. Kept alongside
   res_fc_* as cheap redundancy if the RES forecast is missing for a day.
+- residual_load_fc (optional, derived): load_forecast minus the RES forecast
+  (solar + wind) — the residual load thermal plants must cover, the dominant
+  price driver (EDA corr ~0.77). Added only when res_fc_* is present; a tree
+  cannot form this linear combination from the separate inputs, so handing it
+  over explicitly is worth -3.3% MAE (stable across seeds, ±0.17). All inputs
+  are pre-gate day-ahead forecasts, so it is leakage-safe same-hour.
 """
 
 from __future__ import annotations
@@ -95,5 +101,13 @@ def build_features(
             aligned = extra.reindex(df.index)
             for col in aligned.columns:
                 out[col] = aligned[col]
+    # residual load = demand minus the day-ahead RES forecast: the dominant
+    # price driver, handed to the tree explicitly (it cannot form the linear
+    # combination itself). Needs the RES forecast; same-hour, all inputs are
+    # pre-gate forecasts.
+    if {"res_fc_solar_mw", "res_fc_wind_mw"}.issubset(out.columns):
+        out["residual_load_fc"] = out["load_forecast_mw"] - (
+            out["res_fc_solar_mw"] + out["res_fc_wind_mw"]
+        )
     out["target"] = price
     return out

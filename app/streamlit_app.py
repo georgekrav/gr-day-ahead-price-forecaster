@@ -100,6 +100,8 @@ STRINGS = {
     "shap_features": {
         "en": "- **price_lag_24/48/168h** — the price 1, 2 or 7 days ago at the"
         " same hour (the past is the strongest clue to the future).\n"
+        "- **residual_load_fc** — forecast demand minus forecast solar + wind:"
+        " the load thermal plants must cover, the #1 physical price driver.\n"
         "- **res_fc_solar_mw / res_fc_wind_mw** — the grid operator's own"
         " day-ahead forecast of tomorrow's solar / wind output, in MW.\n"
         "- **load_forecast_mw** — the day-ahead forecast of electricity demand.\n"
@@ -109,6 +111,8 @@ STRINGS = {
         "- **hour / weekday / month / is_holiday** — position in the calendar.",
         "el": "- **price_lag_24/48/168h** — η τιμή 1, 2 ή 7 μέρες πριν, την ίδια"
         " ώρα (το παρελθόν είναι η ισχυρότερη ένδειξη για το μέλλον).\n"
+        "- **residual_load_fc** — προβλεπόμενη ζήτηση μείον προβλεπόμενη ηλιακή +"
+        " αιολική: το φορτίο που καλύπτουν οι θερμικές μονάδες, ο #1 οδηγός τιμής.\n"
         "- **res_fc_solar_mw / res_fc_wind_mw** — η πρόβλεψη του διαχειριστή για"
         " την αυριανή ηλιακή / αιολική παραγωγή, σε MW.\n"
         "- **load_forecast_mw** — η πρόβλεψη ζήτησης ρεύματος για αύριο.\n"
@@ -126,12 +130,15 @@ STRINGS = {
         " πρόβλεψη — σε ποιες εισόδους στηρίζεται περισσότερο το μοντέλο.",
     },
     "shap_caption": {
-        "en": "Yesterday's price dominates, followed by the day-ahead RES"
-        " generation forecast: more forecast solar/wind pushes the price down"
-        " (the duck curve), which is the physically correct relationship.",
-        "el": "Κυριαρχεί η χθεσινή τιμή, ακολουθεί η πρόβλεψη παραγωγής ΑΠΕ"
-        " επόμενης ημέρας: περισσότερη προβλεπόμενη ηλιακή/αιολική ρίχνει την"
-        " τιμή (καμπύλη πάπιας) — η φυσικά σωστή σχέση.",
+        "en": "Yesterday's price dominates, followed by the residual-load"
+        " forecast (demand minus forecast solar and wind) — the load thermal"
+        " plants must cover. More forecast solar/wind lowers residual load and"
+        " pushes the price down (the duck curve), the physically correct"
+        " relationship.",
+        "el": "Κυριαρχεί η χθεσινή τιμή, ακολουθεί η πρόβλεψη υπολειπόμενου"
+        " φορτίου (ζήτηση μείον προβλεπόμενη ηλιακή/αιολική) — το φορτίο που"
+        " καλύπτουν οι θερμικές μονάδες. Περισσότερη ΑΠΕ ρίχνει το υπολειπόμενο"
+        " φορτίο και την τιμή (καμπύλη πάπιας) — η φυσικά σωστή σχέση.",
     },
     "help_title": {
         "en": "Every morning, before the day-ahead auction closes (12:00 CET),"
@@ -190,10 +197,10 @@ STRINGS = {
     "help_live_mae": {
         "en": "Mean Absolute Error over the scored hours of the last 14 days:"
         " by how many EUR/MWh the forecast missed on average. The 12-month"
-        " backtest average is 16.85.",
+        " backtest average is 16.28.",
         "el": "Μέσο απόλυτο σφάλμα στις βαθμολογημένες ώρες των τελευταίων 14"
         " ημερών: πόσα EUR/MWh έπεσε έξω η πρόβλεψη κατά μέσο όρο. Ο μέσος όρος"
-        " του 12μηνου backtest είναι 16,85.",
+        " του 12μηνου backtest είναι 16,28.",
     },
     "help_hours_scored": {
         "en": "How many forecast hours have a published actual price to compare"

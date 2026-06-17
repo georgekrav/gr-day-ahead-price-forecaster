@@ -120,10 +120,26 @@ class TestResForecast:
             weather=pd.DataFrame({"wx_solar_rad": 1.0}, index=df.index),
             res_forecast=self._res(df.index),
         )
-        # res_forecast first, then weather, then target
+        # res_forecast, then weather, then the derived residual, then target
         assert list(out.columns) == features.FEATURE_COLUMNS + [
-            "res_fc_solar_mw", "res_fc_wind_mw", "wx_solar_rad", "target",
+            "res_fc_solar_mw", "res_fc_wind_mw", "wx_solar_rad",
+            "residual_load_fc", "target",
         ]
+
+    def test_residual_load_equals_forecast_minus_res(self):
+        df = make_dataset()
+        res = self._res(df.index)
+        out = features.build_features(df, res_forecast=res)
+        expected = df["load_forecast_mw"] - (
+            res["res_fc_solar_mw"] + res["res_fc_wind_mw"]
+        )
+        pd.testing.assert_series_equal(
+            out["residual_load_fc"], expected, check_names=False
+        )
+
+    def test_residual_absent_without_res_forecast(self):
+        out = features.build_features(make_dataset())
+        assert "residual_load_fc" not in out.columns
 
     def test_res_is_same_hour(self):
         df = make_dataset()
