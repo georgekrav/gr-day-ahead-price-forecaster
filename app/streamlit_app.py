@@ -512,21 +512,25 @@ if history is not None:
 
         local = scored.copy()
         local.index = local.index.tz_convert("Europe/Athens")
-        days = sorted({ts.date() for ts in local.index})
-        labels = [d.strftime("%d/%m/%Y") for d in days]
-        picked = st.selectbox(t("select_day"), labels, index=len(labels) - 1)
-        day = local[local.index.date == days[labels.index(picked)]]
-        err = day["actual"] - day["forecast"]
-        d_mae = err.abs().mean()
-        d_rmse = (err**2).mean() ** 0.5
-        d_in95 = (
-            (day["actual"] >= day["lo_95"]) & (day["actual"] <= day["hi_95"])
-        ).mean()
-        d1, d2, d3 = st.columns(3)
-        d1.metric(t("day_mae"), f"{d_mae:.1f} €/MWh")
-        d2.metric(t("day_rmse"), f"{d_rmse:.1f} €/MWh")
-        d3.metric(t("day_inside_95"), f"{d_in95:.0%}")
-        st.plotly_chart(day_figure(day, t), width="stretch")
+        # only offer days that are essentially complete; the latest day is
+        # often still filling in and would render as a single degenerate point
+        hours_per_day = local.groupby(local.index.date).size()
+        days = sorted(d for d, n in hours_per_day.items() if n >= 20)
+        if days:
+            labels = [d.strftime("%d/%m/%Y") for d in days]
+            picked = st.selectbox(t("select_day"), labels, index=len(labels) - 1)
+            day = local[local.index.date == days[labels.index(picked)]]
+            err = day["actual"] - day["forecast"]
+            d_mae = err.abs().mean()
+            d_rmse = (err**2).mean() ** 0.5
+            d_in95 = (
+                (day["actual"] >= day["lo_95"]) & (day["actual"] <= day["hi_95"])
+            ).mean()
+            d1, d2, d3 = st.columns(3)
+            d1.metric(t("day_mae"), f"{d_mae:.1f} €/MWh")
+            d2.metric(t("day_rmse"), f"{d_rmse:.1f} €/MWh")
+            d3.metric(t("day_inside_95"), f"{d_in95:.0%}")
+            st.plotly_chart(day_figure(day, t), width="stretch")
 
 summary = load_json("backtest_summary.json")
 if summary and "metrics" in summary:
