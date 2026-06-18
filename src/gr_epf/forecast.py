@@ -34,6 +34,18 @@ def update_history(
     return out[HISTORY_COLUMNS]
 
 
+def refresh_actuals(history: pd.DataFrame, prices: pd.Series) -> pd.DataFrame:
+    """Refill the actual column from published prices, leaving forecasts as is.
+
+    Used by the afternoon scoring job: once the day-ahead auction publishes,
+    the track record can be updated the same day without re-issuing (and
+    overwriting) the morning forecast.
+    """
+    out = history.copy()
+    out["actual"] = prices.reindex(out.index)
+    return out[HISTORY_COLUMNS]
+
+
 def latest_payload(
     intervals: pd.DataFrame, generated_at: pd.Timestamp, target_day: str
 ) -> dict:

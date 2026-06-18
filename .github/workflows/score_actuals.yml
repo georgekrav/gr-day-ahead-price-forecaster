@@ -1,0 +1,66 @@
+# Fills in actual prices in the early afternoon, once the day-ahead auction
+# has published, so the track record updates the same day instead of waiting
+# for the next morning. This never re-issues the forecast — it only refreshes
+# the actual column of history.parquet. Two times so one run lands after the
+# ~13:00 CET publication across DST and GitHub's scheduling delay; runs are
+# idempotent (actuals are final once published).
+name: Score actuals
+
+on:
+  schedule:
+    - cron: "0 12 * * *"
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# share the forecast group so a scoring run and the daily forecast never push
+# to history.parquet at the same time
+concurrency:
+  group: daily-forecast
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install
+        run: pip install -e .
+
+      - uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: entsoe-raw-${{ github.run_id }}
+          restore-keys: |
+            entsoe-raw-
+
+      - name: Fill in actual prices
+        env:
+          ENTSOE_API_KEY: ${{ secrets.ENTSOE_API_KEY }}
+        run: python scripts/update_actuals.py
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add forecasts/history.parquet
+          if git diff --cached --quiet; then
+            echo "no new actuals" && exit 0
+          fi
+          git commit -m "Update actual prices $(date -u +%F)"
+          git pull --rebase origin main
+          git push
+
+  # bot commits with GITHUB_TOKEN do not fire push triggers, so sync explicitly
+  sync:
+    needs: score
+    uses: ./.github/workflows/sync_to_hf.yml
+    secrets: inherit

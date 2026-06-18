@@ -55,6 +55,16 @@ class TestUpdateHistory:
         assert len(out) == 48
         assert (out.loc[day1.index, "forecast"] == 100.0).all()
 
+    def test_refresh_actuals_fills_without_changing_forecast(self):
+        intervals = make_intervals("2026-06-13", 24, value=100.0)
+        history = forecast.update_history(None, intervals, pd.Series(dtype=float))
+        prices = pd.Series(80.0, index=intervals.index[:12])
+        out = forecast.refresh_actuals(history, prices)
+        assert list(out.columns) == forecast.HISTORY_COLUMNS
+        assert (out["forecast"] == 100.0).all()
+        assert out["actual"].notna().sum() == 12
+        assert (out["actual"].dropna() == 80.0).all()
+
 
 class TestLatestPayload:
     def test_payload_shape_and_rounding(self):
