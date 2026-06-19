@@ -24,9 +24,12 @@ def main() -> None:
         return
 
     fetch_start = pd.Timestamp(data.DATASET_START, tz=data.LOCAL_TZ)
-    now = pd.Timestamp.now(tz=data.LOCAL_TZ)
+    # reach past today: the day-ahead prices for tomorrow are already published
+    # (that is the whole point of scoring same-day), so the fetch must extend
+    # beyond the wall clock to include them
+    fetch_end = pd.Timestamp.now(tz=data.LOCAL_TZ).normalize() + pd.Timedelta(days=2)
     client = data.get_client()
-    failures = data.download_series(client, "prices", fetch_start, now)
+    failures = data.download_series(client, "prices", fetch_start, fetch_end)
     if failures:
         for chunk_start, err in failures:
             print(f"FAILED {chunk_start:%Y-%m}: {err}", file=sys.stderr)
