@@ -82,6 +82,7 @@ def main() -> None:
     history = pd.read_parquet(history_path) if history_path.exists() else None
     updated = forecast.update_history(history, intervals, df["price_eur_mwh"])
     updated.to_parquet(history_path)
+    forecast.write_history_json(updated, data.REPO_ROOT / "forecasts" / "history.json")
 
     payload = forecast.latest_payload(
         intervals,

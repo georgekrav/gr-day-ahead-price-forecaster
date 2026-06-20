@@ -34,6 +34,41 @@ def update_history(
     return out[HISTORY_COLUMNS]
 
 
+def _round_or_none(value) -> float | None:
+    return None if pd.isna(value) else round(float(value), 2)
+
+
+def history_json(history: pd.DataFrame, days: int = 90) -> dict:
+    """Recent track record as a compact JSON payload for the static site.
+
+    The landing page is a single static HTML file that reads committed
+    artifacts client-side; it cannot parse Parquet, so the last `days` of the
+    track record are mirrored to forecasts/history.json next to the parquet.
+    """
+    if history.empty:
+        return {"rows": []}
+    cutoff = history.index.max() - pd.Timedelta(days=days)
+    recent = history[history.index >= cutoff]
+    local = recent.index.tz_convert(LOCAL_TZ)
+    rows = [
+        {
+            "time_local": ts.isoformat(),
+            "forecast": _round_or_none(r["forecast"]),
+            "lo_80": _round_or_none(r["lo_80"]),
+            "hi_80": _round_or_none(r["hi_80"]),
+            "lo_95": _round_or_none(r["lo_95"]),
+            "hi_95": _round_or_none(r["hi_95"]),
+            "actual": _round_or_none(r["actual"]),
+        }
+        for ts, (_, r) in zip(local, recent.iterrows(), strict=True)
+    ]
+    return {"rows": rows}
+
+
+def write_history_json(history: pd.DataFrame, path: Path, days: int = 90) -> None:
+    path.write_text(json.dumps(history_json(history, days)) + "\n")
+
+
 def refresh_actuals(history: pd.DataFrame, prices: pd.Series) -> pd.DataFrame:
     """Refill the actual column from published prices, leaving forecasts as is.
 

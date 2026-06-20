@@ -65,6 +65,26 @@ class TestUpdateHistory:
         assert out["actual"].notna().sum() == 12
         assert (out["actual"].dropna() == 80.0).all()
 
+    def test_history_json_shape_window_and_nulls(self):
+        intervals = make_intervals("2026-06-13", 24, value=100.0)
+        history = forecast.update_history(None, intervals, pd.Series(dtype=float))
+        history = forecast.refresh_actuals(history, pd.Series(80.0, index=intervals.index[:12]))
+        payload = forecast.history_json(history, days=90)
+        assert len(payload["rows"]) == 24
+        assert set(payload["rows"][0]) == {
+            "time_local", "forecast", "lo_80", "hi_80", "lo_95", "hi_95", "actual",
+        }
+        assert payload["rows"][0]["actual"] == 80.0
+        assert payload["rows"][-1]["actual"] is None
+
+    def test_history_json_trims_to_recent_days(self):
+        old = make_intervals("2026-01-01", 24, value=50.0)
+        new = make_intervals("2026-06-13", 24, value=100.0)
+        history = forecast.update_history(None, old, pd.Series(dtype=float))
+        history = forecast.update_history(history, new, pd.Series(dtype=float))
+        payload = forecast.history_json(history, days=90)
+        assert len(payload["rows"]) == 24  # only the recent block survives the window
+
 
 class TestLatestPayload:
     def test_payload_shape_and_rounding(self):

@@ -39,6 +39,7 @@ def main() -> None:
     history = pd.read_parquet(history_path)
     updated = forecast.refresh_actuals(history, prices)
     updated.to_parquet(history_path)
+    forecast.write_history_json(updated, data.REPO_ROOT / "forecasts" / "history.json")
     scored = int(updated["actual"].notna().sum())
     print(f"history: {len(updated)} rows, {scored} with actual prices")
 
