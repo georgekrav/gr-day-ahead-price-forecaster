@@ -4,13 +4,13 @@
 
 Πρόβλεψη τιμών ηλεκτρικής ενέργειας επόμενης ημέρας για την Eλλάδα (ENTSO-E): leakage-free, LightGBM που νικά τα naive baselines κατά 25%, conformal διαστήματα αβεβαιότητας, και ζωντανή εφαρμογή με καθημερινή αυτόματη ανανέωση.
 
-**Live demo:** https://huggingface.co/spaces/georgekrav/gr-day-ahead-price-forecast
+**Live site:** https://georgekrav.github.io/gr-day-ahead-price-forecaster/
 
 Hourly day-ahead electricity price forecasting for the Greek bidding zone
 (EIC `10YGR-HTSO-----Y`), built on ENTSO-E Transparency Platform data.
 LightGBM against naive baselines, walk-forward backtesting, split-conformal
-prediction intervals, and a Streamlit app fed by a daily GitHub Actions
-forecast job.
+prediction intervals, and a self-contained GitHub Pages dashboard fed by a
+daily GitHub Actions forecast job.
 
 ## Problem
 
@@ -151,8 +151,9 @@ A GitHub Actions cron runs every morning before gate closure: refetches
 fresh ENTSO-E data, retrains on the full history (seconds for LightGBM),
 forecasts day D+1 with intervals, and commits four small artifacts under
 `forecasts/` (latest forecast, append-only track record with actuals filled
-in as they publish, conformal calibration, backtest summary). The Streamlit
-app is pure presentation on top of those files.
+in as they publish, conformal calibration, backtest summary). The GitHub Pages
+dashboard (index.html) is pure presentation on top of those committed files —
+it fetches the JSON client-side and renders it, no server.
 
 Because the daily job retrains from scratch, the model weights are never
 stale — but two things it reads, rather than recomputes, can drift: the
@@ -200,13 +201,13 @@ pytest && ruff check .
 ## Repo layout
 
 ```
-src/gr_epf/        data, features, models, evaluate, conformal, forecast
-scripts/           CLI entry points (download, train, backtest, forecast)
-app/               Streamlit app (reads forecasts/ only)
-forecasts/         committed artifacts the app and the daily job share
+index.html         self-contained GitHub Pages dashboard (fetches forecasts/ JSON)
+src/gr_epf/        data, features, models, evaluate, conformal, forecast, governance
+scripts/           CLI entry points (download, train, backtest, forecast, scoring)
+forecasts/         committed artifacts the dashboard and the daily job share
 notebooks/         EDA only, nothing imported from here
 tests/             pytest, incl. no-leakage and DST/resolution tests
-.github/workflows/ daily forecast cron + monthly recalibration gate + HF sync
+.github/workflows/ daily forecast + afternoon scoring + monthly recalibration gate
 data/              local parquet cache (gitignored)
 ```
 
@@ -214,14 +215,14 @@ data/              local parquet cache (gitignored)
 
 # Ελληνικά
 
-**Ζωντανή εφαρμογή:** https://huggingface.co/spaces/georgekrav/gr-day-ahead-price-forecast
+**Ζωντανή σελίδα:** https://georgekrav.github.io/gr-day-ahead-price-forecaster/
 
 Ωριαία πρόβλεψη των τιμών ηλεκτρικής ενέργειας επόμενης ημέρας για την
 ελληνική ζώνη προσφορών (EIC `10YGR-HTSO-----Y`), πάνω σε δεδομένα της
 πλατφόρμας διαφάνειας ENTSO-E. LightGBM απέναντι σε naive baselines,
 walk-forward backtesting, split-conformal διαστήματα πρόβλεψης, και
-εφαρμογή Streamlit που τροφοδοτείται από καθημερινό αυτόματο job στο
-GitHub Actions.
+αυτοτελής σελίδα στο GitHub Pages που τροφοδοτείται από καθημερινό αυτόματο
+job στο GitHub Actions.
 
 ## Το πρόβλημα
 
@@ -370,8 +371,8 @@ deployment να ακολουθούν την ονομαστική κάλυψη.
 διαστήματα, και κάνει commit τέσσερα μικρά αρχεία στο `forecasts/`
 (τρέχουσα πρόβλεψη, ιστορικό επιδόσεων που συμπληρώνεται με τις
 πραγματικές τιμές μόλις δημοσιευτούν, βαθμονόμηση conformal, σύνοψη
-backtest). Η εφαρμογή Streamlit είναι καθαρή παρουσίαση πάνω σε αυτά τα
-αρχεία.
+backtest). Η σελίδα στο GitHub Pages (index.html) είναι καθαρή παρουσίαση
+πάνω σε αυτά τα αρχεία — τραβάει τα JSON client-side, χωρίς server.
 
 Επειδή το ημερήσιο job επανεκπαιδεύει από την αρχή, τα «βάρη» του μοντέλου
 δεν μπαγιατεύουν ποτέ — δύο όμως πράγματα που απλώς *διαβάζει* (αντί να τα
@@ -423,12 +424,12 @@ pytest && ruff check .
 ## Δομή του repository
 
 ```
-src/gr_epf/        δεδομένα, features, μοντέλα, αξιολόγηση, conformal, forecast
-scripts/           εργαλεία γραμμής εντολών (λήψη, εκπαίδευση, backtest, πρόβλεψη)
-app/               εφαρμογή Streamlit (διαβάζει μόνο το forecasts/)
-forecasts/         τα committed αρχεία που μοιράζονται app και ημερήσιο job
+index.html         αυτοτελής σελίδα GitHub Pages (τραβάει τα JSON του forecasts/)
+src/gr_epf/        δεδομένα, features, μοντέλα, αξιολόγηση, conformal, forecast, governance
+scripts/           εργαλεία γραμμής εντολών (λήψη, εκπαίδευση, backtest, πρόβλεψη, scoring)
+forecasts/         τα committed αρχεία που μοιράζονται σελίδα και ημερήσιο job
 notebooks/         μόνο EDA, τίποτα δεν γίνεται import από εδώ
 tests/             pytest, μαζί με tests μη-διαρροής και αλλαγής ώρας/ανάλυσης
-.github/workflows/ ημερήσιο cron + μηνιαία πύλη επαναβαθμονόμησης + HF sync
+.github/workflows/ ημερήσιο cron + απογευματινό scoring + μηνιαία πύλη
 data/              τοπικό parquet cache (εκτός git)
 ```

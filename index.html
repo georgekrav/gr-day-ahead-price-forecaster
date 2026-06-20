@@ -113,7 +113,13 @@
 
     /* ── KPI cards (live forecast) ── */
     .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem}
-    .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1rem;text-align:center}
+    .kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem 1rem;text-align:center;position:relative}
+
+    /* ── Info tooltip ── */
+    .info{position:absolute;top:.5rem;right:.55rem;width:16px;height:16px;border-radius:50%;border:1px solid var(--border);color:var(--muted);font-size:.65rem;font-weight:700;font-style:normal;display:flex;align-items:center;justify-content:center;cursor:help}
+    .info:hover{border-color:var(--accent2);color:var(--accent2)}
+    .info .tip{visibility:hidden;opacity:0;transition:opacity .15s;position:absolute;bottom:138%;right:-6px;width:215px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.6rem .7rem;font-size:.74rem;font-weight:400;line-height:1.45;color:var(--text);box-shadow:0 8px 28px rgba(0,0,0,.55);z-index:300;text-align:left;letter-spacing:normal;text-transform:none}
+    .info:hover .tip{visibility:visible;opacity:1}
     .kpi-label{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
     .kpi-value{font-size:1.5rem;font-weight:800;color:var(--accent2);letter-spacing:-.02em}
     .kpi-sub{font-size:.8rem;color:var(--muted);margin-top:.25rem}
@@ -197,6 +203,16 @@
     .embed-loading.hidden{opacity:0}
     @media(max-width:700px){.embed-frame-container{height:600px}}
 
+    /* ── FAQ ── */
+    .faq-list{display:flex;flex-direction:column;gap:.8rem;max-width:780px}
+    .faq-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:0 1.3rem;transition:border-color .2s}
+    .faq-item[open]{border-color:var(--accent)}
+    .faq-item summary{cursor:pointer;padding:1.1rem 0;font-weight:600;font-size:.97rem;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:1rem}
+    .faq-item summary::-webkit-details-marker{display:none}
+    .faq-item summary::after{content:'+';color:var(--accent2);font-size:1.4rem;font-weight:400;line-height:1;transition:transform .2s;flex-shrink:0}
+    .faq-item[open] summary::after{transform:rotate(45deg)}
+    .faq-item p{padding:0 0 1.2rem;color:var(--muted);font-size:.9rem;line-height:1.65}
+
     /* ── Fade-in ── */
     .fade-in{opacity:0;transform:translateY(20px);transition:opacity .55s ease,transform .55s ease}
     .fade-in.visible{opacity:1;transform:none}
@@ -216,6 +232,7 @@
     <a href="#track" data-i18n="nav_track">Track Record</a>
     <a href="#results" data-i18n="nav_results">Results</a>
     <a href="#shap" data-i18n="nav_shap">Explainability</a>
+    <a href="#faq" data-i18n="nav_faq">FAQ</a>
     <a href="https://github.com/georgekrav/gr-day-ahead-price-forecaster" target="_blank">GitHub</a>
   </div>
   <div class="lang-toggle">
@@ -261,10 +278,10 @@
   <p class="section-sub fade-in" data-i18n="fc_sub">Fetched directly from GitHub, updated every morning before the 12:00 CET auction.</p>
 
   <div class="kpi-row fade-in">
-    <div class="kpi kpi-loading" id="kpiMean"><div class="kpi-label" data-i18n="kpi_mean">Daily mean</div><div class="kpi-value" id="vMean">—</div></div>
-    <div class="kpi peak kpi-loading" id="kpiPeak"><div class="kpi-label" data-i18n="kpi_peak">Peak</div><div class="kpi-value" id="vPeak">—</div><div class="kpi-sub" id="vPeakT"></div></div>
-    <div class="kpi trough kpi-loading" id="kpiTrough"><div class="kpi-label" data-i18n="kpi_trough">Trough</div><div class="kpi-value" id="vTrough">—</div><div class="kpi-sub" id="vTroughT"></div></div>
-    <div class="kpi kpi-loading" id="kpiGen"><div class="kpi-label" data-i18n="kpi_gen">Generated</div><div class="kpi-value" id="vGen">—</div></div>
+    <div class="kpi kpi-loading" id="kpiMean"><span class="info">?<span class="tip" data-i18n="tip_mean">Average of tomorrow's 24 hourly forecasts — a quick read of how cheap or expensive the day is overall.</span></span><div class="kpi-label" data-i18n="kpi_mean">Daily mean</div><div class="kpi-value" id="vMean">—</div></div>
+    <div class="kpi peak kpi-loading" id="kpiPeak"><span class="info">?<span class="tip" data-i18n="tip_peak">The most expensive forecast hour — usually the evening ramp, when solar fades and gas plants set the price.</span></span><div class="kpi-label" data-i18n="kpi_peak">Peak</div><div class="kpi-value" id="vPeak">—</div><div class="kpi-sub" id="vPeakT"></div></div>
+    <div class="kpi trough kpi-loading" id="kpiTrough"><span class="info">?<span class="tip" data-i18n="tip_trough">The cheapest forecast hour — usually midday, when solar floods the market; on sunny low-demand days it can go negative.</span></span><div class="kpi-label" data-i18n="kpi_trough">Trough</div><div class="kpi-value" id="vTrough">—</div><div class="kpi-sub" id="vTroughT"></div></div>
+    <div class="kpi kpi-loading" id="kpiGen"><span class="info">?<span class="tip" data-i18n="tip_gen">When the daily job produced this forecast (Greek time), before the noon auction closed.</span></span><div class="kpi-label" data-i18n="kpi_gen">Generated</div><div class="kpi-value" id="vGen">—</div></div>
   </div>
 
   <div class="chart-box fade-in">
@@ -283,9 +300,9 @@
   <p class="section-sub fade-in" data-i18n="tr_sub">Past forecasts frozen at issue time, compared against the actual auction prices once published — never rewritten after the fact.</p>
 
   <div class="kpi-row fade-in">
-    <div class="kpi kpi-loading" id="trMae"><div class="kpi-label" data-i18n="tr_mae">Live MAE (14d)</div><div class="kpi-value" id="vTrMae">—</div></div>
-    <div class="kpi kpi-loading" id="trHours"><div class="kpi-label" data-i18n="tr_hours">Hours scored</div><div class="kpi-value" id="vTrHours">—</div></div>
-    <div class="kpi kpi-loading" id="trCov"><div class="kpi-label" data-i18n="tr_cov">Inside 80% band</div><div class="kpi-value" id="vTrCov">—</div></div>
+    <div class="kpi kpi-loading" id="trMae"><span class="info">?<span class="tip" data-i18n="tip_trmae">Mean Absolute Error over the last 14 days of scored hours: by how many €/MWh the live forecast missed on average. The 12-month backtest average is 16.3.</span></span><div class="kpi-label" data-i18n="tr_mae">Live MAE (14d)</div><div class="kpi-value" id="vTrMae">—</div></div>
+    <div class="kpi kpi-loading" id="trHours"><span class="info">?<span class="tip" data-i18n="tip_trhours">How many forecast hours already have a published actual price to compare against.</span></span><div class="kpi-label" data-i18n="tr_hours">Hours scored</div><div class="kpi-value" id="vTrHours">—</div></div>
+    <div class="kpi kpi-loading" id="trCov"><span class="info">?<span class="tip" data-i18n="tip_trcov">Share of actual prices that landed inside the 80% uncertainty band. If the intervals are honest, this hovers around 80%.</span></span><div class="kpi-label" data-i18n="tr_cov">Inside 80% band</div><div class="kpi-value" id="vTrCov">—</div></div>
   </div>
 
   <p class="section-sub fade-in" style="margin-bottom:1rem" data-i18n="tr_overview">Overview — the last 14 days at a glance: how each forecast lined up with the actual price. Pick a single day below to zoom in.</p>
@@ -299,9 +316,9 @@
     <label for="daySelect" class="kpi-label" style="display:block;margin-bottom:.6rem" data-i18n="tr_pick">Compare a specific day (forecast vs. what actually happened)</label>
     <select id="daySelect" style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;font-size:.9rem;margin-bottom:1.2rem;max-width:240px;cursor:pointer"></select>
     <div class="kpi-row">
-      <div class="kpi"><div class="kpi-label" data-i18n="d_mae">MAE that day</div><div class="kpi-value" id="vDMae">—</div></div>
-      <div class="kpi"><div class="kpi-label" data-i18n="d_rmse">RMSE that day</div><div class="kpi-value" id="vDRmse">—</div></div>
-      <div class="kpi"><div class="kpi-label" data-i18n="d_cov">Inside 95% band</div><div class="kpi-value" id="vDCov">—</div></div>
+      <div class="kpi"><span class="info">?<span class="tip" data-i18n="tip_dmae">Average absolute miss (€/MWh) for the selected day — the everyday accuracy.</span></span><div class="kpi-label" data-i18n="d_mae">MAE that day</div><div class="kpi-value" id="vDMae">—</div></div>
+      <div class="kpi"><span class="info">?<span class="tip" data-i18n="tip_drmse">Root Mean Square Error — like MAE but penalizes big misses more, so a gap above MAE means a few spike hours hurt.</span></span><div class="kpi-label" data-i18n="d_rmse">RMSE that day</div><div class="kpi-value" id="vDRmse">—</div></div>
+      <div class="kpi"><span class="info">?<span class="tip" data-i18n="tip_dcov">Share of that day's actual prices that fell inside the wider 95% uncertainty band.</span></span><div class="kpi-label" data-i18n="d_cov">Inside 95% band</div><div class="kpi-value" id="vDCov">—</div></div>
     </div>
     <div class="chart-box"><div id="dayChart" style="height:340px"></div></div>
   </div>
@@ -319,8 +336,7 @@
     <div class="step fade-in"><span class="step-icon">🔧</span><div class="step-num" data-i18n="sn2">Step 02</div><h3 data-i18n="sh2">Feature engineering</h3><p data-i18n="sp2">Price lags (24/48/168 h), calendar features, day-ahead load forecast, 48-hour generation lags, same-hour RES forecast, and residual load (demand − solar − wind). Every input provably available before 12:00 CET — leakage enforced by tests.</p></div>
     <div class="step fade-in"><span class="step-icon">🌲</span><div class="step-num" data-i18n="sn3">Step 03</div><h3 data-i18n="sh3">LightGBM model</h3><p data-i18n="sp3">Gradient-boosted trees with an L1 objective so price spikes don't dominate the fit. The day-ahead RES forecast is the single strongest feature — more expected solar pushes the midday price down (the duck curve).</p></div>
     <div class="step fade-in"><span class="step-icon">📊</span><div class="step-num" data-i18n="sn4">Step 04</div><h3 data-i18n="sh4">Uncertainty intervals</h3><p data-i18n="sp4">Split-conformal prediction intervals, calibrated per hour of day on the last 90 days of out-of-sample residuals. Adaptive Conformal Inference (Gibbs & Candès 2021) keeps empirical coverage on target under market drift.</p></div>
-    <div class="step fade-in"><span class="step-icon">🤖</span><div class="step-num" data-i18n="sn5">Step 05</div><h3 data-i18n="sh5">Daily automation</h3><p data-i18n="sp5">GitHub Actions cron runs every morning: refetch → retrain → forecast → commit. A monthly release-gate re-checks accuracy; ships new calibration only if the model still clearly beats the naive baseline.</p></div>
-    <div class="step fade-in"><span class="step-icon">📱</span><div class="step-num" data-i18n="sn6">Step 06</div><h3 data-i18n="sh6">Streamlit app</h3><p data-i18n="sp6">Pure presentation layer — reads committed JSON/Parquet artifacts, no training at serve time. Bilingual (EN/EL), interactive Plotly charts, track record vs. actual prices, backtest table, SHAP explainability.</p></div>
+    <div class="step fade-in"><span class="step-icon">🤖</span><div class="step-num" data-i18n="sn5">Step 05</div><h3 data-i18n="sh5">Daily automation</h3><p data-i18n="sp5">GitHub Actions cron runs every morning: refetch → retrain → forecast → commit. A monthly release-gate re-checks accuracy; ships new calibration only if the model still clearly beats the naive baseline. An afternoon job fills in actual prices for same-day scoring.</p></div>
   </div>
 </section>
 
@@ -437,6 +453,22 @@ python scripts/make_forecast.py # tomorrow's forecast
 streamlit run app/streamlit_app.py</pre>
 </section>
 
+<div class="divider"></div>
+
+<!-- ═══ FAQ ═══ -->
+<section id="faq">
+  <p class="section-label fade-in" data-i18n="faq_label">FAQ</p>
+  <h2 class="section-title fade-in" data-i18n="faq_title">Frequently asked questions</h2>
+  <div class="faq-list fade-in">
+    <details class="faq-item"><summary data-i18n="q1">What exactly is this?</summary><p data-i18n="a1">An ML system that forecasts tomorrow's 24 hourly wholesale electricity prices for Greece, before the day-ahead auction closes at noon. It runs automatically every morning and publishes the forecast with calibrated uncertainty bands. Educational project — not trading advice.</p></details>
+    <details class="faq-item"><summary data-i18n="q2">How accurate is it?</summary><p data-i18n="a2">Over a 12-month honest backtest, the mean absolute error is ~16 €/MWh — about 28% better than the standard naive baseline (yesterday's same hour). The Track Record section shows the live, day-by-day performance against real auction prices.</p></details>
+    <details class="faq-item"><summary data-i18n="q3">Why do prices sometimes go negative?</summary><p data-i18n="a3">On sunny, windy, low-demand hours, solar and wind can produce more than is needed. They have near-zero running cost and must sell, so the price can fall below zero — producers briefly pay to keep feeding the grid. The model captures this through the residual-load feature.</p></details>
+    <details class="faq-item"><summary data-i18n="q4">How do I know it isn't peeking at the future?</summary><p data-i18n="a4">Every feature is documented and tested to use only information available before the 12:00 CET auction closes. Automated tests perturb future data and assert that earlier forecasts never change. This "no leakage" discipline is the core of honest forecasting.</p></details>
+    <details class="faq-item"><summary data-i18n="q5">How often does it update?</summary><p data-i18n="a5">Every morning a GitHub Actions job refetches data, retrains, and publishes tomorrow's forecast. An afternoon job fills in the actual prices once the auction publishes, so the track record scores the same day. A monthly job re-checks accuracy behind a quality gate.</p></details>
+    <details class="faq-item"><summary data-i18n="q6">Can I use it to trade?</summary><p data-i18n="a6">No — it's an educational/portfolio project. Beating a naive baseline doesn't mean beating the market: the auction price already reflects every participant's expectations. Treat the forecast as a demonstration, not financial advice.</p></details>
+  </div>
+</section>
+
 <!-- ═══ FOOTER ═══ -->
 <footer style="border-top:1px solid var(--border);padding:2rem;text-align:center;color:var(--muted);font-size:.85rem">
   <p><span data-i18n="footer_edu">Educational project — not trading advice.</span> &nbsp;·&nbsp; <span data-i18n="footer_data">Data:</span> <a href="https://transparency.entsoe.eu" target="_blank">ENTSO-E</a> &amp; <a href="https://open-meteo.com" target="_blank">Open-Meteo</a> &nbsp;·&nbsp; <a href="https://github.com/georgekrav/gr-day-ahead-price-forecaster" target="_blank">GitHub</a></p>
@@ -449,7 +481,7 @@ streamlit run app/streamlit_app.py</pre>
 ══════════════════════════════════════════════════════ */
 const S = {
   en: {
-    nav_forecast:'Forecast', nav_how:'How it works', nav_track:'Track Record', nav_results:'Results', nav_shap:'Explainability',
+    nav_forecast:'Forecast', nav_how:'How it works', nav_track:'Track Record', nav_results:'Results', nav_shap:'Explainability', nav_faq:'FAQ',
     badge_live:'Live · Updates every morning', badge_stale:'⚠ Not updated today',
     hero_h1:'Greek Day-Ahead<br/>Electricity Price Forecaster',
     hero_p:"LightGBM predicts all 24 hourly wholesale electricity prices for tomorrow's Greek auction — with calibrated uncertainty intervals — before the 12:00 CET gate closes.",
@@ -464,13 +496,22 @@ const S = {
     tr_overview:'Overview — the last 14 days at a glance: how each forecast lined up with the actual price. Pick a single day below to zoom in.',
     tr_pick:'Compare a specific day (forecast vs. what actually happened)',
     d_mae:'MAE that day', d_rmse:'RMSE that day', d_cov:'Inside 95% band',
+    tip_mean:"Average of tomorrow's 24 hourly forecasts — a quick read of how cheap or expensive the day is overall.",
+    tip_peak:'The most expensive forecast hour — usually the evening ramp, when solar fades and gas plants set the price.',
+    tip_trough:'The cheapest forecast hour — usually midday, when solar floods the market; on sunny low-demand days it can go negative.',
+    tip_gen:'When the daily job produced this forecast (Greek time), before the noon auction closed.',
+    tip_trmae:'Mean Absolute Error over the last 14 days of scored hours: by how many €/MWh the live forecast missed on average. The 12-month backtest average is 16.3.',
+    tip_trhours:'How many forecast hours already have a published actual price to compare against.',
+    tip_trcov:'Share of actual prices that landed inside the 80% uncertainty band. If the intervals are honest, this hovers around 80%.',
+    tip_dmae:'Average absolute miss (€/MWh) for the selected day — the everyday accuracy.',
+    tip_drmse:'Root Mean Square Error — like MAE but penalizes big misses more, so a gap above MAE means a few spike hours hurt.',
+    tip_dcov:"Share of that day's actual prices that fell inside the wider 95% uncertainty band.",
     how_label:'Methodology', how_title:'How it works', how_sub:'Every morning, before the SDAC auction closes, the pipeline fetches fresh data, retrains, and publishes a new 24-hour forecast with uncertainty bands.',
     sn1:'Step 01', sh1:'Data ingestion', sp1:"Three years of ENTSO-E hourly data: day-ahead prices, actual load, generation by type (solar, wind, gas, hydro), and the operator's day-ahead RES forecast. Weather from Open-Meteo. UTC-indexed to handle DST correctly.",
     sn2:'Step 02', sh2:'Feature engineering', sp2:'Price lags (24/48/168 h), calendar features, day-ahead load forecast, 48-hour generation lags, same-hour RES forecast, and residual load (demand − solar − wind). Every input provably available before 12:00 CET — leakage enforced by tests.',
     sn3:'Step 03', sh3:'LightGBM model', sp3:"Gradient-boosted trees with an L1 objective so price spikes don't dominate the fit. The day-ahead RES forecast is the single strongest feature — more expected solar pushes the midday price down (the duck curve).",
     sn4:'Step 04', sh4:'Uncertainty intervals', sp4:'Split-conformal prediction intervals, calibrated per hour of day on the last 90 days of out-of-sample residuals. Adaptive Conformal Inference (Gibbs & Candès 2021) keeps empirical coverage on target under market drift.',
     sn5:'Step 05', sh5:'Daily automation', sp5:'GitHub Actions cron runs every morning: refetch → retrain → forecast → commit. A monthly release-gate re-checks accuracy; ships new calibration only if the model still clearly beats the naive baseline.',
-    sn6:'Step 06', sh6:'Streamlit app', sp6:'Pure presentation layer — reads committed JSON/Parquet artifacts, no training at serve time. Bilingual (EN/EL), interactive Plotly charts, track record vs. actual prices, backtest table, SHAP explainability.',
     bt_label:'Performance', bt_title:'12-month walk-forward backtest', bt_sub:'Every scored hour was predicted by a model that had never seen it. Monthly retraining on an expanding window — the only fair evaluation.',
     th_model:'Model', th_method:'Method', th_nom:'Nominal', th_emp:'Empirical',
     td_static:'Static conformal',
@@ -496,10 +537,17 @@ const S = {
     tech_label:'Stack', tech_title:'Built with', run_local:'Run it locally:',
     app_label:'Full App', app_title:'Interactive app — track record & more', app_sub:'The full Streamlit app includes the track record (forecast vs. actuals over 14 days), day-by-day drill-down, and the complete bilingual interface.',
     embed_open:'↗ Open full screen', embed_loading:'Loading live app…',
+    faq_label:'FAQ', faq_title:'Frequently asked questions',
+    q1:'What exactly is this?', a1:"An ML system that forecasts tomorrow's 24 hourly wholesale electricity prices for Greece, before the day-ahead auction closes at noon. It runs automatically every morning and publishes the forecast with calibrated uncertainty bands. Educational project — not trading advice.",
+    q2:'How accurate is it?', a2:"Over a 12-month honest backtest, the mean absolute error is ~16 €/MWh — about 28% better than the standard naive baseline (yesterday's same hour). The Track Record section shows the live, day-by-day performance against real auction prices.",
+    q3:'Why do prices sometimes go negative?', a3:'On sunny, windy, low-demand hours, solar and wind can produce more than is needed. They have near-zero running cost and must sell, so the price can fall below zero — producers briefly pay to keep feeding the grid. The model captures this through the residual-load feature.',
+    q4:"How do I know it isn't peeking at the future?", a4:'Every feature is documented and tested to use only information available before the 12:00 CET auction closes. Automated tests perturb future data and assert that earlier forecasts never change. This "no leakage" discipline is the core of honest forecasting.',
+    q5:'How often does it update?', a5:'Every morning a GitHub Actions job refetches data, retrains, and publishes tomorrow’s forecast. An afternoon job fills in the actual prices once the auction publishes, so the track record scores the same day. A monthly job re-checks accuracy behind a quality gate.',
+    q6:'Can I use it to trade?', a6:"No — it's an educational/portfolio project. Beating a naive baseline doesn't mean beating the market: the auction price already reflects every participant's expectations. Treat the forecast as a demonstration, not financial advice.",
     footer_edu:'Educational project — not trading advice.', footer_data:'Data:', footer_by:'Built by',
   },
   el: {
-    nav_forecast:'Πρόβλεψη', nav_how:'Πώς λειτουργεί', nav_track:'Ιστορικό', nav_results:'Αποτελέσματα', nav_shap:'Ερμηνευσιμότητα',
+    nav_forecast:'Πρόβλεψη', nav_how:'Πώς λειτουργεί', nav_track:'Ιστορικό', nav_results:'Αποτελέσματα', nav_shap:'Ερμηνευσιμότητα', nav_faq:'Ερωτήσεις',
     badge_live:'Ζωντανά · Ανανεώνεται κάθε πρωί', badge_stale:'⚠ Δεν ανανεώθηκε σήμερα',
     hero_h1:'Πρόβλεψη Τιμής<br/>Ρεύματος Επόμενης Ημέρας',
     hero_p:'Το LightGBM προβλέπει και τις 24 ωριαίες χονδρεμπορικές τιμές ρεύματος για την αυριανή ελληνική δημοπρασία — με βαθμονομημένες ζώνες αβεβαιότητας — πριν κλείσει η αγορά στις 12:00 CET.',
@@ -514,13 +562,22 @@ const S = {
     tr_overview:'Επισκόπηση — οι τελευταίες 14 ημέρες με μια ματιά: πώς ταίριαξε κάθε πρόβλεψη με την πραγματική τιμή. Διάλεξε μία μέρα πιο κάτω για zoom.',
     tr_pick:'Σύγκριση συγκεκριμένης ημέρας (πρόβλεψη vs. τι έγινε τελικά)',
     d_mae:'MAE εκείνης της ημέρας', d_rmse:'RMSE εκείνης της ημέρας', d_cov:'Εντός ζώνης 95%',
+    tip_mean:'Ο μέσος όρος των 24 ωριαίων προβλέψεων του αύριο — γρήγορη αίσθηση του πόσο φτηνή ή ακριβή είναι η μέρα.',
+    tip_peak:'Η ακριβότερη προβλεπόμενη ώρα — συνήθως η βραδινή αιχμή, όταν χάνεται ο ήλιος και την τιμή ορίζουν οι μονάδες αερίου.',
+    tip_trough:'Η φθηνότερη προβλεπόμενη ώρα — συνήθως το μεσημέρι· σε ηλιόλουστες μέρες χαμηλής ζήτησης μπορεί να βγει αρνητική.',
+    tip_gen:'Πότε παρήχθη αυτή η πρόβλεψη (ώρα Ελλάδας), πριν κλείσει η μεσημεριανή δημοπρασία.',
+    tip_trmae:'Μέσο απόλυτο σφάλμα στις τελευταίες 14 ημέρες: πόσα €/MWh έπεσε έξω η ζωντανή πρόβλεψη κατά μέσο όρο. Ο μέσος όρος του 12μηνου backtest είναι 16,3.',
+    tip_trhours:'Πόσες προβλεπόμενες ώρες έχουν ήδη δημοσιευμένη πραγματική τιμή για σύγκριση.',
+    tip_trcov:'Ποσοστό πραγματικών τιμών που έπεσαν μέσα στη ζώνη 80%. Αν οι ζώνες είναι σωστές, κινείται γύρω στο 80%.',
+    tip_dmae:'Μέσο απόλυτο σφάλμα (€/MWh) για την επιλεγμένη μέρα — η καθημερινή ακρίβεια.',
+    tip_drmse:'Root Mean Square Error — σαν το MAE αλλά τιμωρεί πιο πολύ τα μεγάλα λάθη· διαφορά πάνω από το MAE σημαίνει λίγες ώρες-spike.',
+    tip_dcov:'Ποσοστό των πραγματικών τιμών εκείνης της μέρας που έπεσαν μέσα στην ευρύτερη ζώνη 95%.',
     how_label:'Μεθοδολογία', how_title:'Πώς λειτουργεί', how_sub:'Κάθε πρωί, πριν κλείσει η δημοπρασία SDAC, το pipeline φέρνει φρέσκα δεδομένα, επανεκπαιδεύει και δημοσιεύει νέα 24ωρη πρόβλεψη με ζώνες αβεβαιότητας.',
     sn1:'Βήμα 01', sh1:'Λήψη δεδομένων', sp1:'Τρία χρόνια ωριαίων δεδομένων ENTSO-E: τιμές επόμενης ημέρας, πραγματικό φορτίο, παραγωγή ανά τεχνολογία (ηλιακά, αιολικά, αέριο, υδρο) και πρόβλεψη ΑΠΕ διαχειριστή. Καιρός από Open-Meteo. UTC ευρετηρίαση για σωστή διαχείριση αλλαγής ώρας.',
     sn2:'Βήμα 02', sh2:'Μηχανική χαρακτηριστικών', sp2:'Υστερήσεις τιμής (24/48/168 ω.), ημερολόγιο, πρόβλεψη φορτίου, υστερήσεις παραγωγής 48 ωρών, πρόβλεψη ΑΠΕ ίδιας ώρας και υπολειπόμενο φορτίο. Κάθε είσοδος αποδεδειγμένα διαθέσιμη πριν τις 12:00 CET — εξασφαλίζεται με tests.',
     sn3:'Βήμα 03', sh3:'Μοντέλο LightGBM', sp3:'Gradient-boosted δέντρα με στόχο L1 ώστε ακραίες τιμές να μην κυριαρχούν. Η πρόβλεψη ΑΠΕ επόμενης ημέρας είναι το ισχυρότερο χαρακτηριστικό — περισσότερη αναμενόμενη ηλιακή ρίχνει τη μεσημεριανή τιμή (καμπύλη πάπιας).',
     sn4:'Βήμα 04', sh4:'Ζώνες αβεβαιότητας', sp4:'Split-conformal ζώνες πρόβλεψης, βαθμονομημένες ανά ώρα της ημέρας στις τελευταίες 90 ημέρες out-of-sample σφαλμάτων. Το Adaptive Conformal Inference (Gibbs & Candès 2021) κρατά την εμπειρική κάλυψη στον στόχο υπό drift αγοράς.',
     sn5:'Βήμα 05', sh5:'Ημερήσιος αυτοματισμός', sp5:'GitHub Actions cron τρέχει κάθε πρωί: λήψη → επανεκπαίδευση → πρόβλεψη → commit. Μηνιαίο job ελέγχου: στέλνει νέα βαθμονόμηση μόνο αν το μοντέλο εξακολουθεί να νικά το naive baseline.',
-    sn6:'Βήμα 06', sh6:'Εφαρμογή Streamlit', sp6:'Καθαρά στρώμα παρουσίασης — διαβάζει committed JSON/Parquet αρχεία, καμία εκπαίδευση κατά εξυπηρέτηση. Δίγλωσση (ΕΝ/ΕΛ), διαδραστικά γραφήματα Plotly, ιστορικό επιδόσεων, backtest πίνακας, ερμηνευσιμότητα SHAP.',
     bt_label:'Επιδόσεις', bt_title:'12μηνο walk-forward backtest', bt_sub:'Κάθε βαθμολογημένη ώρα προβλέφθηκε από μοντέλο που δεν την είχε δει ποτέ. Μηνιαία επανεκπαίδευση σε διευρυνόμενο παράθυρο — η μόνη δίκαιη αξιολόγηση.',
     th_model:'Μοντέλο', th_method:'Μέθοδος', th_nom:'Ονομαστικό', th_emp:'Εμπειρικό',
     td_static:'Στατική conformal',
@@ -546,6 +603,13 @@ const S = {
     tech_label:'Τεχνολογίες', tech_title:'Φτιαγμένο με', run_local:'Τοπική εκτέλεση:',
     app_label:'Πλήρης Εφαρμογή', app_title:'Διαδραστική εφαρμογή — ιστορικό & περισσότερα', app_sub:'Η πλήρης εφαρμογή Streamlit περιλαμβάνει το ιστορικό επιδόσεων (πρόβλεψη vs. πραγματικές για 14 ημέρες), λεπτομερή ανά ημέρα ανάλυση και το πλήρες δίγλωσσο περιβάλλον.',
     embed_open:'↗ Πλήρης οθόνη', embed_loading:'Φόρτωση εφαρμογής…',
+    faq_label:'Συχνές ερωτήσεις', faq_title:'Συχνές ερωτήσεις',
+    q1:'Τι ακριβώς είναι αυτό;', a1:'Ένα σύστημα ML που προβλέπει τις 24 ωριαίες χονδρεμπορικές τιμές ρεύματος του αύριο για την Ελλάδα, πριν κλείσει η δημοπρασία επόμενης ημέρας το μεσημέρι. Τρέχει αυτόματα κάθε πρωί και δημοσιεύει την πρόβλεψη με βαθμονομημένες ζώνες αβεβαιότητας. Εκπαιδευτικό project — όχι συμβουλή συναλλαγών.',
+    q2:'Πόσο ακριβές είναι;', a2:'Σε ένα τίμιο 12μηνο backtest, το μέσο απόλυτο σφάλμα είναι ~16 €/MWh — περίπου 28% καλύτερο από το βασικό naive (ίδια ώρα χθες). Η ενότητα Ιστορικό δείχνει τη ζωντανή, ημερήσια επίδοση έναντι πραγματικών τιμών δημοπρασίας.',
+    q3:'Γιατί η τιμή γίνεται μερικές φορές αρνητική;', a3:'Σε ηλιόλουστες/ανεμώδεις ώρες χαμηλής ζήτησης, ήλιος και άνεμος παράγουν πάνω από όσο χρειάζεται. Έχουν σχεδόν μηδενικό κόστος και πρέπει να πουλήσουν, οπότε η τιμή μπορεί να πέσει κάτω από το μηδέν — οι παραγωγοί στιγμιαία πληρώνουν για να συνεχίσουν να τροφοδοτούν. Το μοντέλο το πιάνει μέσω του υπολειπόμενου φορτίου.',
+    q4:'Πώς ξέρω ότι δεν «κρυφοκοιτάζει» το μέλλον;', a4:'Κάθε feature τεκμηριώνεται και ελέγχεται ότι χρησιμοποιεί μόνο πληροφορία διαθέσιμη πριν κλείσει η δημοπρασία στις 12:00 CET. Αυτόματα tests διαταράσσουν μελλοντικά δεδομένα και επιβεβαιώνουν ότι οι παλαιότερες προβλέψεις δεν αλλάζουν. Αυτή η πειθαρχία «μηδενικής διαρροής» είναι ο πυρήνας του τίμιου forecasting.',
+    q5:'Πόσο συχνά ανανεώνεται;', a5:'Κάθε πρωί ένα GitHub Actions job ξανακατεβάζει δεδομένα, επανεκπαιδεύει και δημοσιεύει την αυριανή πρόβλεψη. Ένα απογευματινό job γεμίζει τις πραγματικές τιμές μόλις βγει η δημοπρασία, ώστε η βαθμολόγηση να γίνεται την ίδια μέρα. Ένα μηνιαίο job ξαναελέγχει την ακρίβεια πίσω από μια πύλη ποιότητας.',
+    q6:'Μπορώ να το χρησιμοποιήσω για trading;', a6:'Όχι — είναι εκπαιδευτικό/portfolio project. Το να νικάς ένα naive baseline δεν σημαίνει ότι νικάς την αγορά: η τιμή της δημοπρασίας ήδη ενσωματώνει τις προσδοκίες όλων. Δες το ως επίδειξη, όχι οικονομική συμβουλή.',
     footer_edu:'Εκπαιδευτικό project — όχι συμβουλή συναλλαγών.', footer_data:'Δεδομένα:', footer_by:'Φτιαγμένο από',
   }
 };
@@ -599,8 +663,7 @@ async function checkBadge() {
     const r = await fetch(BASE + '/forecasts/latest.json', {cache:'no-cache'});
     if (!r.ok) throw new Error();
     const d = await r.json();
-    const ts = d.generated_at_utc;
-    const gen = new Date(ts.endsWith('Z') ? ts : ts + 'Z');
+    const gen = new Date(d.generated_at_utc);
     const ageH = (Date.now() - gen.getTime()) / 3_600_000;
     if (ageH > 30) {
       document.getElementById('liveBadge').classList.add('stale');
@@ -637,7 +700,7 @@ function renderForecast(data) {
   document.getElementById('vTrough').textContent = fc[piMin].toFixed(1) + ' €/MWh';
   document.getElementById('vTroughT').textContent = S[lang].kpi_trough + ' @ ' + fmt(x[piMin]);
 
-  const gen = new Date((data.generated_at_utc.endsWith('Z') ? data.generated_at_utc : data.generated_at_utc + 'Z'));
+  const gen = new Date(data.generated_at_utc);
   document.getElementById('vGen').textContent = gen.toLocaleString('el-GR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Athens'});
 
   ['kpiMean','kpiPeak','kpiTrough','kpiGen'].forEach(id => {
@@ -665,11 +728,13 @@ function renderForecast(data) {
     legend:{orientation:'h', yanchor:'top', y:-0.18},
     margin:{t:16,b:70,l:60,r:20},
     hovermode:'x unified',
+    hoverlabel:{bgcolor:'#161b22', bordercolor:'#1f77b4', font:{color:'#e6edf3', size:13, family:'-apple-system,BlinkMacSystemFont,sans-serif'}},
   };
 
-  Plotly.react('fcChart', traces, layout, {displayModeBar:false, responsive:true});
+  // show the container before drawing so Plotly measures the real width
   document.getElementById('fcSpinner').style.display = 'none';
   document.getElementById('fcChart').style.display = 'block';
+  Plotly.react('fcChart', traces, layout, {displayModeBar:false, responsive:true});
   window._fcDrawn = true;
 }
 
@@ -693,6 +758,7 @@ function trackLayout() {
     xaxis:{gridcolor:'#30363d'},
     legend:{orientation:'h', yanchor:'top', y:-0.18},
     margin:{t:16,b:60,l:60,r:20}, hovermode:'x unified',
+    hoverlabel:{bgcolor:'#161b22', bordercolor:'#1f77b4', font:{color:'#e6edf3', size:13, family:'-apple-system,BlinkMacSystemFont,sans-serif'}},
   };
 }
 
@@ -745,9 +811,9 @@ function renderTrack() {
       hovertemplate:'%{x|%d/%m %H:%M} — %{y:.1f} €/MWh<extra>'+S[lang].fc_actual+'</extra>'},
   ];
   const layout = trackLayout(); layout.xaxis.tickformat = '%d/%m';
-  Plotly.react('trChart', traces, layout, {displayModeBar:false, responsive:true});
   document.getElementById('trSpinner').style.display = 'none';
   document.getElementById('trChart').style.display = 'block';
+  Plotly.react('trChart', traces, layout, {displayModeBar:false, responsive:true});
 }
 
 function buildDayPicker() {
