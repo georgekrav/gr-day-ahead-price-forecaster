@@ -62,10 +62,3 @@ jobs:
           git commit -m "Daily forecast $(date -u +%F)"
           git pull --rebase origin main
           git push
-
-  # bot commits made with GITHUB_TOKEN do not fire push triggers, so the
-  # Space sync must be called explicitly after the daily commit
-  sync:
-    needs: forecast
-    uses: ./.github/workflows/sync_to_hf.yml
-    secrets: inherit

@@ -58,9 +58,3 @@ jobs:
           git commit -m "Update actual prices $(date -u +%F)"
           git pull --rebase origin main
           git push
-
-  # bot commits with GITHUB_TOKEN do not fire push triggers, so sync explicitly
-  sync:
-    needs: score
-    uses: ./.github/workflows/sync_to_hf.yml
-    secrets: inherit

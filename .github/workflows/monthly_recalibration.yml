@@ -59,10 +59,3 @@ jobs:
           git commit -m "Monthly recalibration $(date -u +%F)"
           git pull --rebase origin main
           git push
-
-  # The gate may refresh the published metrics shown in the app, so mirror
-  # them to the Space (bot commits do not fire the push-trigger sync).
-  sync:
-    needs: recalibrate
-    uses: ./.github/workflows/sync_to_hf.yml
-    secrets: inherit
