@@ -144,7 +144,8 @@
     @keyframes spin{to{transform:rotate(360deg)}}
 
     /* ── Steps (how it works) ── */
-    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.5rem}
+    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:1.1rem}
+    @media(max-width:760px){.steps{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}
     .step{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.8rem;transition:border-color .2s,box-shadow .2s}
     .step:hover{border-color:var(--accent);box-shadow:var(--glow)}
     .step-num{font-size:.7rem;font-weight:700;color:var(--accent2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:.8rem}
@@ -275,7 +276,7 @@
 <section id="forecast">
   <p class="section-label fade-in" data-i18n="fc_label">Live Forecast</p>
   <h2 class="section-title fade-in" data-i18n="fc_title">Tomorrow's price — live</h2>
-  <p class="section-sub fade-in" data-i18n="fc_sub">Fetched directly from GitHub, updated every morning before the 12:00 CET auction.</p>
+  <p class="section-sub fade-in" style="max-width:820px" data-i18n="fc_sub">Fetched directly from GitHub, updated every morning before the 12:00 CET auction.</p>
 
   <div class="kpi-row fade-in">
     <div class="kpi kpi-loading" id="kpiMean"><span class="info">?<span class="tip" data-i18n="tip_mean">Average of tomorrow's 24 hourly forecasts — a quick read of how cheap or expensive the day is overall.</span></span><div class="kpi-label" data-i18n="kpi_mean">Daily mean</div><div class="kpi-value" id="vMean">—</div></div>
