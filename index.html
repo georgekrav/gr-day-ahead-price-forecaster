@@ -217,6 +217,24 @@
     /* ── Fade-in ── */
     .fade-in{opacity:0;transform:translateY(20px);transition:opacity .55s ease,transform .55s ease}
     .fade-in.visible{opacity:1;transform:none}
+
+    /* ── Mobile ── */
+    @media(max-width:640px){
+      nav{padding:0 1rem}
+      .nav-logo{font-size:.85rem}
+      section{padding:3.4rem 1.2rem}
+      .divider{margin:0 1.2rem}
+      .hero{min-height:auto;padding:4.5rem 1.2rem 3.2rem}
+      .hero-cta{margin-top:2rem;flex-direction:column;width:100%;max-width:300px}
+      .hero-cta .btn{width:100%;justify-content:center}
+      .stat{flex:1 1 130px;padding:1.25rem 1rem}
+      .stat-value{font-size:1.55rem}
+      .section-sub{margin-bottom:1.8rem;font-size:.95rem}
+      .step{padding:1.4rem}
+      .kpi{padding:1rem .7rem}
+      .kpi-value{font-size:1.3rem}
+      .info .tip{max-width:80vw}
+    }
   </style>
 </head>
 <body>
@@ -298,7 +316,7 @@
 <section id="track">
   <p class="section-label fade-in" data-i18n="tr_label">Track Record</p>
   <h2 class="section-title fade-in" data-i18n="tr_title">How past forecasts did</h2>
-  <p class="section-sub fade-in" data-i18n="tr_sub">Past forecasts frozen at issue time, compared against the actual auction prices once published — never rewritten after the fact.</p>
+  <p class="section-sub fade-in" style="max-width:1040px" data-i18n="tr_sub">Past forecasts frozen at issue time, compared against the actual auction prices once published — never rewritten after the fact.</p>
 
   <div class="kpi-row fade-in">
     <div class="kpi kpi-loading" id="trMae"><span class="info">?<span class="tip" data-i18n="tip_trmae">Mean Absolute Error over the last 14 days of scored hours: by how many €/MWh the live forecast missed on average. The 12-month backtest average is 16.3.</span></span><div class="kpi-label" data-i18n="tr_mae">Live MAE (14d)</div><div class="kpi-value" id="vTrMae">—</div></div>
@@ -306,7 +324,7 @@
     <div class="kpi kpi-loading" id="trCov"><span class="info">?<span class="tip" data-i18n="tip_trcov">Share of actual prices that landed inside the 80% uncertainty band. If the intervals are honest, this hovers around 80%.</span></span><div class="kpi-label" data-i18n="tr_cov">Inside 80% band</div><div class="kpi-value" id="vTrCov">—</div></div>
   </div>
 
-  <p class="section-sub fade-in" style="margin-bottom:1rem" data-i18n="tr_overview">Overview — the last 14 days at a glance: how each forecast lined up with the actual price. Pick a single day below to zoom in.</p>
+  <p class="section-sub fade-in" style="max-width:1040px;margin-bottom:1rem" data-i18n="tr_overview">Overview — the last 14 days at a glance: how each forecast lined up with the actual price. Pick a single day below to zoom in.</p>
   <div class="chart-box fade-in">
     <div class="chart-spinner" id="trSpinner"><div class="spinner"></div><span data-i18n="loading_chart">Loading…</span></div>
     <div id="trChart" style="height:360px;display:none"></div>
@@ -331,7 +349,7 @@
 <section id="how">
   <p class="section-label fade-in" data-i18n="how_label">Methodology</p>
   <h2 class="section-title fade-in" data-i18n="how_title">How it works</h2>
-  <p class="section-sub fade-in" data-i18n="how_sub">Every morning, before the SDAC auction closes, the pipeline fetches fresh data, retrains, and publishes a new 24-hour forecast with uncertainty bands.</p>
+  <p class="section-sub fade-in" style="max-width:1040px" data-i18n="how_sub">Every morning, before the SDAC auction closes, the pipeline fetches fresh data, retrains, and publishes a new 24-hour forecast with uncertainty bands.</p>
   <div class="steps">
     <div class="step fade-in"><span class="step-icon">📡</span><div class="step-num" data-i18n="sn1">Step 01</div><h3 data-i18n="sh1">Data ingestion</h3><p data-i18n="sp1">Three years of ENTSO-E hourly data: day-ahead prices, actual load, generation by type (solar, wind, gas, hydro), and the operator's day-ahead RES forecast. Weather from Open-Meteo. UTC-indexed to handle DST correctly.</p></div>
     <div class="step fade-in"><span class="step-icon">🔧</span><div class="step-num" data-i18n="sn2">Step 02</div><h3 data-i18n="sh2">Feature engineering</h3><p data-i18n="sp2">Price lags (24/48/168 h), calendar features, day-ahead load forecast, 48-hour generation lags, same-hour RES forecast, and residual load (demand − solar − wind). Every input provably available before 12:00 CET — leakage enforced by tests.</p></div>
