@@ -24,6 +24,7 @@ import time
 from pathlib import Path
 
 import pandas as pd
+import requests
 from dotenv import load_dotenv
 from entsoe import EntsoePandasClient
 
@@ -51,6 +52,13 @@ GEN_HYDRO = ("Hydro Water Reservoir", "Hydro Run-of-river and poundage")
 # operator's own forward view of tomorrow's RES output.
 RES_FORECAST_MAP = {"Solar": "res_fc_solar_mw", "Wind Onshore": "res_fc_wind_mw"}
 REQUEST_PAUSE_S = 0.6
+# ENTSO-E returns sporadic 5xx responses (notably early morning, when the
+# daily job runs). entsoe-py only retries dropped connections, so transient
+# HTTP failures are retried here before being surfaced; a persistent failure
+# still propagates and fails the run (gaps are reported, never imputed).
+TRANSIENT_HTTP_STATUS = frozenset({500, 502, 503, 504})
+FETCH_RETRIES = 4
+FETCH_BACKOFF_S = 15
 
 
 def get_client() -> EntsoePandasClient:
@@ -111,6 +119,35 @@ def fetch_chunk(
     return df[(df.index >= start) & (df.index < end)]
 
 
+def _fetch_with_retry(
+    client: EntsoePandasClient, series: str, start: pd.Timestamp, end: pd.Timestamp
+) -> pd.DataFrame:
+    """fetch_chunk with backoff on transient ENTSO-E server errors.
+
+    entsoe-py retries dropped connections but not HTTP 5xx responses, which
+    the platform returns intermittently. Those are retried with a linear
+    backoff; any other error, or a 5xx that persists across all attempts,
+    propagates to the caller.
+    """
+    last_exc: requests.HTTPError | None = None
+    for attempt in range(1, FETCH_RETRIES + 1):
+        try:
+            return fetch_chunk(client, series, start, end)
+        except requests.HTTPError as exc:
+            status = getattr(exc.response, "status_code", None)
+            if status not in TRANSIENT_HTTP_STATUS:
+                raise
+            last_exc = exc
+            if attempt < FETCH_RETRIES:
+                wait = FETCH_BACKOFF_S * attempt
+                log.warning(
+                    "%s %s: HTTP %s, retry %d/%d in %ds",
+                    series, start.date(), status, attempt, FETCH_RETRIES, wait,
+                )
+                time.sleep(wait)
+    raise last_exc
+
+
 def download_series(
     client: EntsoePandasClient,
     series: str,
@@ -131,7 +168,7 @@ def download_series(
         if path.exists() and not force and ce <= now:
             continue
         try:
-            df = fetch_chunk(client, series, cs, ce)
+            df = _fetch_with_retry(client, series, cs, ce)
         except Exception as exc:
             log.error("%s %s failed: %r", series, cs.date(), exc)
             failures.append((cs, repr(exc)))

@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+import requests
 
 from gr_epf import data
 
@@ -162,3 +163,57 @@ class TestBuildHourlyDataset:
         gen.to_parquet(path)
         with pytest.raises(ValueError, match="generation types missing"):
             data.build_hourly_dataset(tmp_path)
+
+
+class TestDownloadRetry:
+    """download_series rides out transient ENTSO-E 5xx, surfaces the rest."""
+
+    def _http_error(self, status: int) -> requests.HTTPError:
+        resp = requests.Response()
+        resp.status_code = status
+        return requests.HTTPError(f"{status} error", response=resp)
+
+    def _patch(self, monkeypatch, side_effects):
+        calls = {"n": 0}
+        good = pd.DataFrame(
+            {"price_eur_mwh": [1.0, 2.0]},
+            index=pd.date_range("2025-01-01", periods=2, freq="h", tz="UTC"),
+        )
+
+        def fake_fetch(client, series, start, end):
+            effect = side_effects[min(calls["n"], len(side_effects) - 1)]
+            calls["n"] += 1
+            if effect is not None:
+                raise effect
+            return good
+
+        monkeypatch.setattr(data, "fetch_chunk", fake_fetch)
+        monkeypatch.setattr(data.time, "sleep", lambda _s: None)
+        return calls
+
+    def _run(self, tmp_path):
+        return data.download_series(
+            None, "prices", ts("2025-01-01"), ts("2025-02-01"), raw_dir=tmp_path
+        )
+
+    def test_transient_then_success(self, monkeypatch, tmp_path):
+        calls = self._patch(
+            monkeypatch, [self._http_error(503), self._http_error(503), None]
+        )
+        failures = self._run(tmp_path)
+        assert failures == []
+        assert calls["n"] == 3
+        assert (tmp_path / "prices" / "2025-01-01.parquet").exists()
+
+    def test_persistent_5xx_surfaces(self, monkeypatch, tmp_path):
+        calls = self._patch(monkeypatch, [self._http_error(503)])
+        failures = self._run(tmp_path)
+        assert len(failures) == 1
+        assert calls["n"] == data.FETCH_RETRIES
+        assert not (tmp_path / "prices" / "2025-01-01.parquet").exists()
+
+    def test_non_transient_not_retried(self, monkeypatch, tmp_path):
+        calls = self._patch(monkeypatch, [self._http_error(400)])
+        failures = self._run(tmp_path)
+        assert len(failures) == 1
+        assert calls["n"] == 1
