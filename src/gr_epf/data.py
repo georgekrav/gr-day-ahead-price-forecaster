@@ -27,6 +27,7 @@ import pandas as pd
 import requests
 from dotenv import load_dotenv
 from entsoe import EntsoePandasClient
+from entsoe.exceptions import NoMatchingDataError
 
 log = logging.getLogger(__name__)
 
@@ -169,6 +170,19 @@ def download_series(
             continue
         try:
             df = _fetch_with_retry(client, series, cs, ce)
+        except NoMatchingDataError:
+            # A chunk reaching past "now" can legitimately have no data yet:
+            # on the last day of a month the forecast window spills into the
+            # next month, whose realized prices/load/generation do not exist.
+            # That is not a gap to surface -- skip it. A fully past chunk with
+            # no data is a real gap and still fails.
+            if ce > now:
+                log.info("%s %s: no data yet (future chunk), skipping",
+                         series, cs.date())
+                continue
+            log.error("%s %s failed: no matching data", series, cs.date())
+            failures.append((cs, "NoMatchingDataError"))
+            continue
         except Exception as exc:
             log.error("%s %s failed: %r", series, cs.date(), exc)
             failures.append((cs, repr(exc)))

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import requests
+from entsoe.exceptions import NoMatchingDataError
 
 from gr_epf import data
 
@@ -217,3 +218,16 @@ class TestDownloadRetry:
         failures = self._run(tmp_path)
         assert len(failures) == 1
         assert calls["n"] == 1
+
+    def test_past_no_data_surfaces(self, monkeypatch, tmp_path):
+        self._patch(monkeypatch, [NoMatchingDataError()])
+        failures = self._run(tmp_path)
+        assert len(failures) == 1
+
+    def test_future_no_data_skipped(self, monkeypatch, tmp_path):
+        self._patch(monkeypatch, [NoMatchingDataError()])
+        now = pd.Timestamp.now(tz=data.LOCAL_TZ)
+        start = (now + pd.DateOffset(months=2)).normalize()
+        end = start + pd.DateOffset(days=10)
+        failures = data.download_series(None, "prices", start, end, raw_dir=tmp_path)
+        assert failures == []
