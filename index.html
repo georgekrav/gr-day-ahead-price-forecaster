@@ -501,7 +501,7 @@ streamlit run app/streamlit_app.py</pre>
 const S = {
   en: {
     nav_forecast:'Forecast', nav_how:'How it works', nav_track:'Track Record', nav_results:'Results', nav_shap:'Explainability', nav_faq:'FAQ',
-    badge_live:'Live · Updates every morning', badge_stale:'⚠ Not updated today',
+    badge_live:'Live · Updates every morning', badge_stale:'⚠ Last forecast',
     hero_h1:'Greek Day-Ahead<br/>Electricity Price Forecaster',
     hero_p:"LightGBM predicts all 24 hourly wholesale electricity prices for tomorrow's Greek auction — with calibrated uncertainty intervals — before the 12:00 CET gate closes.",
     btn_app:'View Live Forecast', btn_github:'View Source',
@@ -567,7 +567,7 @@ const S = {
   },
   el: {
     nav_forecast:'Πρόβλεψη', nav_how:'Πώς λειτουργεί', nav_track:'Ιστορικό', nav_results:'Αποτελέσματα', nav_shap:'Ερμηνευσιμότητα', nav_faq:'Ερωτήσεις',
-    badge_live:'Ζωντανά · Ανανεώνεται κάθε πρωί', badge_stale:'⚠ Δεν ανανεώθηκε σήμερα',
+    badge_live:'Ζωντανά · Ανανεώνεται κάθε πρωί', badge_stale:'⚠ Τελευταία πρόβλεψη',
     hero_h1:'Πρόβλεψη Τιμής<br/>Ρεύματος Επόμενης Ημέρας',
     hero_p:'Το LightGBM προβλέπει και τις 24 ωριαίες χονδρεμπορικές τιμές ρεύματος για την αυριανή ελληνική δημοπρασία — με βαθμονομημένες ζώνες αβεβαιότητας — πριν κλείσει η αγορά στις 12:00 CET.',
     btn_app:'Δες την Πρόβλεψη', btn_github:'Πηγαίος Κώδικας',
@@ -655,13 +655,7 @@ function applyLang(l) {
     if (S[l][k] != null) el.innerHTML = S[l][k];
   });
 
-  // Badge: if stale, keep badge_stale; else badge_live
-  const badgeEl = document.getElementById('liveBadge');
-  const badgeTextEl = document.getElementById('badgeText');
-  if (badgeTextEl) {
-    const key = badgeEl && badgeEl.classList.contains('stale') ? 'badge_stale' : 'badge_live';
-    badgeTextEl.textContent = S[l][key];
-  }
+  renderBadge();
 
   // Re-render chart labels if charts already drawn
   if (window._fcDrawn) renderForecast(window._fcData);
@@ -677,18 +671,37 @@ document.querySelectorAll('.lang-btn').forEach(b =>
 ══════════════════════════════════════════════════════ */
 const BASE = 'https://raw.githubusercontent.com/georgekrav/gr-day-ahead-price-forecaster/main';
 
+let _stale = null;  // dd/mm of the last forecast when it is not up to date, else null
+
+function renderBadge() {
+  const el = document.getElementById('liveBadge');
+  const t = document.getElementById('badgeText');
+  if (!el || !t) return;
+  if (_stale) {
+    el.classList.add('stale');
+    t.textContent = S[lang].badge_stale + ' ' + _stale;
+  } else {
+    el.classList.remove('stale');
+    t.textContent = S[lang].badge_live;
+  }
+}
+
 async function checkBadge() {
   try {
     const r = await fetch(BASE + '/forecasts/latest.json', {cache:'no-cache'});
     if (!r.ok) throw new Error();
     const d = await r.json();
-    const gen = new Date(d.generated_at_utc);
-    const ageH = (Date.now() - gen.getTime()) / 3_600_000;
-    if (ageH > 30) {
-      document.getElementById('liveBadge').classList.add('stale');
-      document.getElementById('badgeText').textContent = S[lang].badge_stale;
-    }
-  } catch(_) { /* can't verify — leave green */ }
+    const opts = {timeZone:'Europe/Athens'};
+    const today = new Date().toLocaleDateString('en-CA', opts);            // YYYY-MM-DD
+    const genDay = new Date(d.generated_at_utc).toLocaleDateString('en-CA', opts);
+    const target = d.target_day || '';
+    // Up to date if it already covers a future day, or was produced today;
+    // otherwise the source has not delivered fresh data and we say so.
+    const fresh = (target && target > today) || genDay === today;
+    _stale = fresh ? null : new Date(d.generated_at_utc)
+      .toLocaleDateString('el-GR', {timeZone:'Europe/Athens', day:'2-digit', month:'2-digit'});
+    renderBadge();
+  } catch(_) { /* can't verify -- leave as is */ }
 }
 
 /* ══════════════════════════════════════════════════════
