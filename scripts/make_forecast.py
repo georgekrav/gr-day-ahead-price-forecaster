@@ -33,10 +33,12 @@ def main() -> None:
     failures = []
     for series in data.SERIES:
         failures += data.download_series(client, series, fetch_start, target_end)
-    if failures:
-        for chunk_start, err in failures:
-            print(f"FAILED {chunk_start:%Y-%m}: {err}", file=sys.stderr)
-        sys.exit(1)
+    # A failed refetch of the current chunk (a transient ENTSO-E error, or the
+    # source not having published the latest day yet) is not fatal: the run
+    # falls back to whatever the cache holds, and the data-sufficiency check
+    # below decides whether a forecast can honestly be issued.
+    for chunk_start, err in failures:
+        print(f"warning: fetch {chunk_start:%Y-%m} failed: {err}", file=sys.stderr)
 
     df = data.build_hourly_dataset()
     target_index = pd.date_range(
@@ -64,8 +66,17 @@ def main() -> None:
             file=sys.stderr,
         )
     if fold["price_lag_24h"].isna().all():
-        print("aborting: today's prices missing from cache", file=sys.stderr)
-        sys.exit(1)
+        # Without today's day-ahead prices the 24h lag feature is empty, so
+        # there is no honest forecast to make. This happens when the source
+        # has not published the latest day yet (a delay or a gap), not because
+        # anything broke -- skip cleanly and let the next scheduled run pick it
+        # up once the data lands, rather than failing the workflow.
+        print(
+            "skipping: today's day-ahead prices are not published yet;"
+            " the next scheduled run will retry once they are available",
+            file=sys.stderr,
+        )
+        return
     if fold["load_forecast_mw"].isna().all():
         print(
             "warning: load forecast for the target day not yet published;"

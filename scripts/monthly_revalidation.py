@@ -60,10 +60,12 @@ def main() -> None:
     failures = []
     for series in data.SERIES:
         failures += data.download_series(client, series, fetch_start, now)
-    if failures:
-        for chunk_start, err in failures:
-            print(f"FAILED {chunk_start:%Y-%m}: {err}", file=sys.stderr)
-        sys.exit(1)
+    # A failed current-month refetch (a transient ENTSO-E error) is not fatal:
+    # recalibration runs on the cached history and the release gate still
+    # guards what gets promoted, so a stale-by-a-day window is harmless. Surface
+    # it as a warning rather than failing the job.
+    for chunk_start, err in failures:
+        print(f"warning: fetch {chunk_start:%Y-%m} failed: {err}", file=sys.stderr)
 
     df = data.build_hourly_dataset()
     # The backtest uses the ERA5 weather archive (realized weather as a proxy
