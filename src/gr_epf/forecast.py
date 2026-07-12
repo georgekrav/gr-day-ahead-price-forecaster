@@ -16,6 +16,16 @@ import pandas as pd
 from gr_epf.data import LOCAL_TZ
 
 HISTORY_COLUMNS = ["forecast", "lo_80", "hi_80", "lo_95", "hi_95", "actual"]
+# Issuing with a crippled 24h price anchor measured +26% MAE (and +49% with
+# 48h also gone) -- worse than the naive baseline -- and the one forecast that
+# shipped with a 1-of-24-hours anchor (2026-07-01) scored MAE 62. Better to
+# skip and retry than publish something worse than nothing.
+MIN_ANCHOR_HOURS = 20
+
+
+def sufficient_price_anchor(fold: pd.DataFrame, min_hours: int = MIN_ANCHOR_HOURS) -> bool:
+    """True when enough of the 24h price lag exists to forecast honestly."""
+    return int(fold["price_lag_24h"].notna().sum()) >= min_hours
 
 
 def update_history(

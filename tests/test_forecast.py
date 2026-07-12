@@ -123,3 +123,27 @@ def test_update_history_keeps_intervals(tmp_path):
     intervals = make_intervals("2026-06-13", 24)
     out = forecast.update_history(None, intervals, pd.Series(dtype=float))
     assert np.allclose(out["hi_95"] - out["lo_95"], 40.0)
+
+
+class TestSufficientPriceAnchor:
+    def _fold(self, present_hours: int) -> pd.DataFrame:
+        idx = pd.date_range("2026-07-02", periods=24, freq="h", tz="UTC")
+        lag = pd.Series(100.0, index=idx)
+        lag.iloc[present_hours:] = np.nan
+        return pd.DataFrame({"price_lag_24h": lag})
+
+    def test_full_anchor_passes(self):
+        assert forecast.sufficient_price_anchor(self._fold(24))
+
+    def test_threshold_boundary(self):
+        assert forecast.sufficient_price_anchor(self._fold(forecast.MIN_ANCHOR_HOURS))
+        assert not forecast.sufficient_price_anchor(
+            self._fold(forecast.MIN_ANCHOR_HOURS - 1)
+        )
+
+    def test_single_hour_rejected(self):
+        # the 2026-07-01 case: a 1-of-24-hours anchor produced MAE 62
+        assert not forecast.sufficient_price_anchor(self._fold(1))
+
+    def test_empty_rejected(self):
+        assert not forecast.sufficient_price_anchor(self._fold(0))

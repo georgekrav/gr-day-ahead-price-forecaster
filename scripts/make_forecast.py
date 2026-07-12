@@ -65,15 +65,17 @@ def main() -> None:
             " predicting through LightGBM NaN routing",
             file=sys.stderr,
         )
-    if fold["price_lag_24h"].isna().all():
-        # Without today's day-ahead prices the 24h lag feature is empty, so
-        # there is no honest forecast to make. This happens when the source
-        # has not published the latest day yet (a delay or a gap), not because
-        # anything broke -- skip cleanly and let the next scheduled run pick it
-        # up once the data lands, rather than failing the workflow.
+    if not forecast.sufficient_price_anchor(fold):
+        # Without (most of) today's day-ahead prices the 24h lag anchor is
+        # gone and the measured degradation is worse than the naive baseline
+        # (see forecast.MIN_ANCHOR_HOURS). The source has not published the
+        # latest day yet -- skip cleanly and let the next scheduled run pick
+        # it up once the data lands, rather than failing the workflow.
+        have = int(fold["price_lag_24h"].notna().sum())
         print(
-            "skipping: today's day-ahead prices are not published yet;"
-            " the next scheduled run will retry once they are available",
+            f"skipping: only {have}/24 hours of today's day-ahead prices are"
+            " published; the next scheduled run will retry once they are"
+            " available",
             file=sys.stderr,
         )
         return
