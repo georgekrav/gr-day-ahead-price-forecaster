@@ -1,2 +1,2 @@
-notebooks/** linguist-documentation
+*.ipynb linguist-documentation
 index.html linguist-documentation
