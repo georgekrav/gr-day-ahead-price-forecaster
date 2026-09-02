@@ -30,10 +30,13 @@ def main() -> None:
     fetch_end = pd.Timestamp.now(tz=data.LOCAL_TZ).normalize() + pd.Timedelta(days=2)
     client = data.get_client()
     failures = data.download_series(client, "prices", fetch_start, fetch_end)
-    if failures:
-        for chunk_start, err in failures:
-            print(f"FAILED {chunk_start:%Y-%m}: {err}", file=sys.stderr)
-        sys.exit(1)
+    # Scoring is purely additive: it fills the actual column for hours whose
+    # price is known and leaves the rest NaN. A failed refetch (transient
+    # ENTSO-E error, platform maintenance, or a day not published yet) just
+    # means fewer hours get scored this run, so it is a warning -- the next
+    # run picks them up. Same rule as make_forecast/monthly_revalidation.
+    for chunk_start, err in failures:
+        print(f"warning: fetch {chunk_start:%Y-%m} failed: {err}", file=sys.stderr)
 
     prices = data.resample_to_hourly(data.load_raw("prices")["price_eur_mwh"])
     history = pd.read_parquet(history_path)
